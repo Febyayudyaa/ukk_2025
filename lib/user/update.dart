@@ -24,34 +24,46 @@ class _UpdateUserState extends State<UpdateUser> {
   }
 
   Future<void> _loadUser() async {
+  try {
     final data = await Supabase.instance.client
         .from('user')
         .select()
         .eq('id', widget.id)
-        .single();
+        .maybeSingle();
+
+    if (data == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
+      Navigator.pop(context);
+      return;
+    }
 
     setState(() {
       _username.text = data['username'] ?? '';
       _password.text = data['password'] ?? '';
-      _role.text = data['role']?.toString() ?? '';
+      _role.text = data['role'] ?? '';
     });
+  } catch (e) {
+    print('Error loading user: $e');
   }
+}
 
-  Future<void> updateUser() async {
-    if (_formKey.currentState!.validate()) {
-      await Supabase.instance.client.from('user').update({
-        'username': _username.text,
-        'password': _password.text,
-        'role': _role.text,
-      }).eq('id', widget.id);
+Future<void> updateUser() async {
+  if (!_formKey.currentState!.validate()) return;
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const IndexUser()),
-        (route) => false,
-      );
-    }
+  try {
+    await Supabase.instance.client.from('user').update({
+      'username': _username.text,
+      'password': _password.text,
+      'role': _role.text,
+    }).eq('id', widget.id);
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data berhasil diperbarui')));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const IndexUser()));
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

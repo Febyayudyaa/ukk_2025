@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:ukk_2025/detailpenjualan/index.dart';
+import 'package:ukk_2025/pelanggan/index.dart';
+import 'package:ukk_2025/penjualan/index.dart';
+import 'package:ukk_2025/produk/index.dart';
+import 'package:ukk_2025/user/index.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -32,6 +37,12 @@ class _HomePageState extends State<HomePage> {
     Center(
         child: Text(
       'Detail Penjualan',
+      style: TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+    )),
+    Center(
+        child: Text(
+      'User',
       style: TextStyle(
           fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
     )),
@@ -69,30 +80,60 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             ListTile(
-                leading: const Icon(Icons.shopping_bag),
-                title: const Text('Produk'),
-                textColor: Colors.black,
-                onTap: () => _onItemTapped(0)),
+              leading: const Icon(Icons.shopping_bag),
+              title: const Text('Produk'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const IndexProduk()),
+                );
+              },
+            ),
             ListTile(
-                leading: const Icon(Icons.people),
-                title: const Text('Pelanggan'),
-                textColor: Colors.black,
-                onTap: () => _onItemTapped(1)),
+              leading: const Icon(Icons.people),
+              title: const Text('Pelanggan'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => IndexPelanggan()),
+                );
+              },
+            ),
             ListTile(
-                leading: const Icon(Icons.point_of_sale),
-                title: const Text('Penjualan'),
-                textColor: Colors.black,
-                onTap: () => _onItemTapped(2)),
+              leading: const Icon(Icons.point_of_sale),
+              title: const Text('Penjualan'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => IndexPenjualan()),
+                );
+              },
+            ),
             ListTile(
-                leading: const Icon(Icons.receipt_long),
-                title: const Text('Detail Penjualan'),
-                textColor: Colors.black,
-                onTap: () => _onItemTapped(3)),
+              leading: const Icon(Icons.receipt_long),
+              title: const Text('Detail Penjualan'),
+              textColor: Colors.black,
+              onTap: () {
+                //  Navigator.push(
+                //  context,
+                //    MaterialPageRoute(builder: (context) => IndexDetailJual(prd: prd)),
+                //  );
+              },
+            ),
             ListTile(
-                leading: const Icon(Icons.person_2_outlined),
-                title: const Text('Data User'),
-                textColor: Colors.black,
-                onTap: () => _onItemTapped(4)),
+              leading: const Icon(Icons.person_2_outlined),
+              title: const Text('Data User'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => IndexUser()),
+                );
+              },
+            ),
           ],
         ),
       ),
