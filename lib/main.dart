@@ -53,12 +53,15 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() {
       _isLoading = true;
-      _usernameError = null;
-      _passwordError = null;
     });
 
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
+
+    setState(() {
+      _usernameError = username.isEmpty ? 'Harap Isi Username' : null;
+      _passwordError = password.isEmpty ? 'Harap Masukan Password' : null;
+    });
 
     try {
       final response = await supabase
@@ -69,11 +72,11 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response == null) {
         setState(() {
-          _usernameError = 'Username Salah';
+          _usernameError = 'Harap Benahi Username';
         });
       } else if (response['password'] != password) {
         setState(() {
-          _passwordError = 'Password salah';
+          _passwordError = 'Harap Benahi Password';
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

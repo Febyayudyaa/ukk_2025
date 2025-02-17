@@ -67,7 +67,7 @@ class _IndexPenjualanState extends State<IndexPenjualan> {
         child: penjualan.isEmpty
             ? const Center(
                 child: Text(
-                  'Tidak ada penjualan',
+                  'Tidak ada Riwayat Penjualan',
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -150,16 +150,15 @@ class _IndexPenjualanState extends State<IndexPenjualan> {
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.delete,
-                                          color: Colors.brown, size: 28),
+                                          color: Color(0xFF8D6E63)),
                                       onPressed: () {
                                         showDialog(
                                           context: context,
                                           builder: (BuildContext context) {
                                             return AlertDialog(
-                                              title:
-                                                  const Text('Hapus Penjualan'),
+                                              title: const Text('Hapus Produk'),
                                               content: const Text(
-                                                  'AApakah anda yakin untuk menghapus penjualan?'),
+                                                  'Apakah Anda yakin ingin menghapus produk ini?'),
                                               actions: [
                                                 TextButton(
                                                   onPressed: () =>
@@ -168,15 +167,15 @@ class _IndexPenjualanState extends State<IndexPenjualan> {
                                                 ),
                                                 TextButton(
                                                   onPressed: () {
-                                                    deletePenjualan(
-                                                        langgan['PenjualanID']);
+                                                    deletePenjualan;
                                                     Navigator.pop(context);
                                                   },
                                                   child: const Text(
                                                     'Hapus',
                                                     style: TextStyle(
-                                                  backgroundColor: Color(0xFF4E342E),
-                                                  ),
+                                                      backgroundColor:
+                                                          Color(0xFF4E342E),
+                                                    ),
                                                   ),
                                                 ),
                                               ],

@@ -87,7 +87,7 @@ class _InsertProdukState extends State<InsertProduk> {
                     labelText: 'Nama Produk',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) => value == null || value.isEmpty ? 'Nama tidak boleh kosong' : null,
+                  validator: (value) => value == null || value.isEmpty ? 'Nama Produk tidak boleh kosong' : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
@@ -127,7 +127,7 @@ class _InsertProdukState extends State<InsertProduk> {
                       borderRadius: BorderRadius.circular(30)
                     ),
                     child: const Text(
-                      'Simpan',
+                      'SIMPAN',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,

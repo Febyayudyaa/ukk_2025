@@ -26,24 +26,37 @@ class _IndexProdukState extends State<IndexProduk> {
     fetchProduk();
   }
 
-      Future<void> fetchProduk() async {
-        try {
-          final response = await Supabase.instance.client.from('produk').select();
-          setState(() {
-            produk = List<Map<String, dynamic>>.from(response);
-            filteredProduk = produk;
-          });
-        } catch (e) {
-          print('Error fetching produk: $e');
-        }
-      }
-
-  Future<void> deleteProduk(int id) async {
+  Future<void> fetchProduk() async {
     try {
-      await Supabase.instance.client.from('produk').delete().eq('ProdukID', id);
-      fetchProduk();
+      final response = await Supabase.instance.client.from('produk').select();
+      setState(() {
+        produk = List<Map<String, dynamic>>.from(response);
+        filteredProduk = produk;
+      });
     } catch (e) {
-      print('Error deleting produk: $e');
+      print('Error fetching produk: $e');
+    }
+  }
+
+  Future<void> deleteProduk(int ProdukID) async {
+    try {
+      print('Menghapus produk dengan ID: $ProdukID');
+
+      final response = await Supabase.instance.client
+          .from('produk')
+          .delete()
+          .eq('ProdukID', ProdukID);
+
+      print('Response Supabase: $response');
+
+      if (response == null) {
+        print('Error: Tidak dapat menghapus produk.');
+      } else {
+        print('Produk berhasil dihapus.');
+        fetchProduk();
+      }
+    } catch (e) {
+      print('Error dalam menghapus produk: $e');
     }
   }
 
@@ -99,7 +112,7 @@ class _IndexProdukState extends State<IndexProduk> {
                   child: TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      hintText: 'Cari Produk',
+                      hintText: 'Cari Produk...',
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
@@ -213,9 +226,38 @@ class _IndexProdukState extends State<IndexProduk> {
                                   if (widget.showFAB)
                                     IconButton(
                                       icon: const Icon(Icons.delete,
-                                          color: Colors.brown),
+                                          color: Color(0xFF8D6E63)),
                                       onPressed: () {
-                                        deleteProduk(langgan['ProdukID']);
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: const Text('Hapus Produk'),
+                                              content: const Text(
+                                                  'Apakah Anda yakin ingin menghapus produk ini?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: const Text('Batal'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    deleteProduk;
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text(
+                                                    'Hapus',
+                                                    style: TextStyle(
+                                                      backgroundColor:
+                                                          Color(0xFF4E342E),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
                                       },
                                     ),
                                 ],

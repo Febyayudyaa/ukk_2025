@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ukk_2025/produk/insert.dart';
-import 'package:ukk_2025/produk/beliproduk.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Beliproduk extends StatefulWidget {
@@ -12,59 +10,37 @@ class Beliproduk extends StatefulWidget {
 }
 
 class _BeliprodukState extends State<Beliproduk> {
-  int JumlahProduk = 0;
-  int Subtotal = 0;
-  List<Map<String, dynamic>> pelangganList = [];
+  int jumlahProduk = 0;
+  int subtotal = 0;
   int? selectedPelangganID;
 
   @override
   void initState() {
     super.initState();
-    fetchPelanggan();
   }
 
   void updateJumlahProduk(int harga, int delta) {
     setState(() {
-      JumlahProduk += delta;
-      if (JumlahProduk < 0) JumlahProduk = 0;
-      Subtotal = JumlahProduk * harga;
+      jumlahProduk += delta;
+      if (jumlahProduk < 0) jumlahProduk = 0;
+      subtotal = jumlahProduk * harga;
     });
   }
 
-  Future<void> fetchPelanggan() async {
+  Future<void> insertPenjualan(int totalHarga) async {
     final supabase = Supabase.instance.client;
-    final response =
-        await supabase.from('pelanggan').select('PelangganID, NamaPelanggan');
-
-    if (response.isNotEmpty) {
-      setState(() {
-        pelangganList = List<Map<String, dynamic>>.from(response);
-        if (pelangganList.isNotEmpty) {
-          selectedPelangganID = pelangganList.first['PelangganID'];
-        }
-      });
-    }
-  }
-
-  Future<void> insertDetailPenjualan(int ProdukID, int PenjualanID,
-      int JumlahProduk, int Subtotal, int PelangganID) async {
-    final supabase = Supabase.instance.client;
-
     try {
-      final response = await supabase.from('detailpenjualan').insert({
-        'ProdukID': ProdukID,
-        'PenjualanID': PenjualanID,
-        'JumlahProduk': JumlahProduk,
-        'Subtotal': Subtotal,
-        'PelangganID': PelangganID,
-      }).select();
-
-      print('Response dari Supabase: $response');
+      await supabase.from('penjualan').insert({
+        'TanggalPenjualan': DateTime.now().toIso8601String(),
+        'TotalHarga': totalHarga,
+        'PelangganID': selectedPelangganID ?? 1,
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pesanan berhasil disimpan!')),
       );
-      Navigator.pop(context);
+
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal menyimpan pesanan: $e')),
@@ -76,9 +52,6 @@ class _BeliprodukState extends State<Beliproduk> {
   Widget build(BuildContext context) {
     final produk = widget.produk;
     final harga = produk['Harga'] ?? 0;
-    final ProdukID = produk['ProdukID'] ?? 0;
-    final PenjualanID = 1;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -116,26 +89,6 @@ class _BeliprodukState extends State<Beliproduk> {
                     style: const TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 24),
-                  DropdownButtonFormField<int>(
-                    value: selectedPelangganID,
-                    items: pelangganList.map((pelanggan) {
-                      return DropdownMenuItem<int>(
-                        value: pelanggan['PelangganID'],
-                        child: Text(pelanggan['NamaPelanggan']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedPelangganID = value;
-                        print("Pelanggan dipilih: $selectedPelangganID");
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Pilih Pelanggan',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -147,7 +100,7 @@ class _BeliprodukState extends State<Beliproduk> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          '$JumlahProduk',
+                          '$jumlahProduk',
                           style: const TextStyle(
                               fontSize: 24, fontWeight: FontWeight.bold),
                         ),
@@ -166,21 +119,8 @@ class _BeliprodukState extends State<Beliproduk> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            if (JumlahProduk > 0 &&
-                                selectedPelangganID != null) {
-                              await insertDetailPenjualan(
-                                ProdukID,
-                                PenjualanID,
-                                JumlahProduk,
-                                Subtotal,
-                                selectedPelangganID!,
-                              );
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => InsertProduk()),
-                              );
+                            if (jumlahProduk > 0) {
+                              await insertPenjualan(subtotal);
                             }
                           },
                           style: ElevatedButton.styleFrom(
@@ -188,7 +128,7 @@ class _BeliprodukState extends State<Beliproduk> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                           child: Text(
-                            'Pesan (Rp$Subtotal)',
+                            'Pesan (Rp$subtotal)',
                             style: const TextStyle(
                                 fontSize: 18, color: Colors.white),
                           ),

@@ -91,7 +91,7 @@ class _InsertPenjualanState extends State<InsertPenjualan> {
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) => value == null || value.isEmpty
-                    ? 'Total tidak boleh kosong'
+                    ? 'Total harga tidak boleh kosong'
                     : null,
               ),
               const SizedBox(height: 10),
@@ -117,7 +117,7 @@ class _InsertPenjualanState extends State<InsertPenjualan> {
                     borderRadius: BorderRadius.circular(30)
                   ),
                   child: const Text(
-                    'Simpan',
+                    'SIMPAN',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,

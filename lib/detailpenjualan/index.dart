@@ -30,6 +30,8 @@ class _DetailPenjualanIndexState extends State<DetailPenjualanIndex> {
           produk(NamaProduk, Harga), 
           pelanggan(NamaPelanggan)
       ''');
+    // PelangganID,
+    //  pelanggan(NamaPelanggan)
 
     print(response);
 

@@ -33,7 +33,6 @@ class _InsertPelangganPageState extends State<InsertPelangganPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Data berhasil disimpan!')),
         );
-        // Kirim data baru ke halaman sebelumnya
         Navigator.pop(context, {
           'Nama': nama,
           'Alamat': alamat,
@@ -101,7 +100,7 @@ class _InsertPelangganPageState extends State<InsertPelangganPage> {
                   backgroundColor: Colors.brown[800],
                   foregroundColor: Colors.white,
                 ),
-                child: Text('Simpan'),
+                child: Text('SIMPAN'),
               ),
             ],
           ),

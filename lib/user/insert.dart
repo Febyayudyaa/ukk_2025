@@ -84,7 +84,7 @@ class _InsertUserState extends State<InsertUser> {
               const SizedBox(height: 10),
               TextFormField(
                 controller: _passwordController,
-                obscureText: _isObscure, // Menentukan apakah teks disembunyikan
+                obscureText: _isObscure, 
                 decoration: InputDecoration(
                   labelText: 'Password',
                   border: const OutlineInputBorder(),

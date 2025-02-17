@@ -43,6 +43,28 @@ class _IndexPelangganState extends State<IndexPelanggan> {
     });
   }
 
+  Future<void> deletePelanggan(int PelangganID) async {
+    try {
+      print('Menghapus pelanggan dengan ID: $PelangganID');
+
+      final response = await Supabase.instance.client
+          .from('pelanggan')
+          .delete()
+          .eq('PelangganID', PelangganID);
+
+      print('Response Supabase: $response');
+
+      if (response == null) {
+        print('Error: Tidak dapat menghapus pelanggan.');
+      } else {
+        print('Pelanggan berhasil dihapus.');
+        fetchPelanggan();
+      }
+    } catch (e) {
+      print('Error menghapus pelanggan: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -185,14 +207,16 @@ class _IndexPelangganState extends State<IndexPelanggan> {
                                           ),
                                           TextButton(
                                             onPressed: () {
-                                              fetchPelanggan();
+                                              deletePelanggan(
+                                                  langgan['PelangganID']);
                                               Navigator.pop(context);
                                             },
                                             child: const Text(
                                               'Hapus',
                                               style: TextStyle(
-                                                  backgroundColor: Color(0xFF4E342E),
-                                                  ),
+                                                backgroundColor:
+                                                    Color(0xFF4E342E),
+                                              ),
                                             ),
                                           ),
                                         ],

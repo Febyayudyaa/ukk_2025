@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:ukk_2025/homepage.dart';
 import 'package:ukk_2025/main.dart';
@@ -48,11 +47,15 @@ class _UpdatePenjualanState extends State<UpdatePenjualan> {
   Future<void> updatePenjualan() async {
     if (_formKey.currentState!.validate()) {
       try {
-        final response = await Supabase.instance.client.from('penjualan').update({
-          'TanggalPenjualan': DateTime.parse(_tgl.text).toIso8601String(),
-          'TotalHarga': double.tryParse(_total.text) ?? 0.0,
-          'PelangganID': int.tryParse(_plnggnId.text) ?? 0,
-        }).eq('PenjualanID', widget.PenjualanID).select();
+        final response = await Supabase.instance.client
+            .from('penjualan')
+            .update({
+              'TanggalPenjualan': DateTime.parse(_tgl.text).toIso8601String(),
+              'TotalHarga': double.tryParse(_total.text) ?? 0.0,
+              'PelangganID': int.tryParse(_plnggnId.text) ?? 0,
+            })
+            .eq('PenjualanID', widget.PenjualanID)
+            .select();
 
         if (response.isNotEmpty) {
           Navigator.pushAndRemoveUntil(
@@ -68,7 +71,8 @@ class _UpdatePenjualanState extends State<UpdatePenjualan> {
       } catch (e) {
         print('Error updating penjualan: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Terjadi kesalahan saat memperbarui data')),
+          const SnackBar(
+              content: Text('Terjadi kesalahan saat memperbarui data')),
         );
       }
     }
@@ -78,7 +82,8 @@ class _UpdatePenjualanState extends State<UpdatePenjualan> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Penjualan', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Edit Penjualan', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4E342E),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -88,13 +93,7 @@ class _UpdatePenjualanState extends State<UpdatePenjualan> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6D4C41), Color(0xFF8D6E63), Color(0xFFA1887F)], 
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -112,7 +111,7 @@ class _UpdatePenjualanState extends State<UpdatePenjualan> {
                     return 'Tanggal tidak boleh kosong';
                   }
                   try {
-                    DateTime.parse(value); 
+                    DateTime.parse(value);
                   } catch (e) {
                     return 'Format tanggal tidak valid';
                   }
