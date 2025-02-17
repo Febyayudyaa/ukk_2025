@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'homepage.dart';
 
-const String supabaseUrl = "https://fcvrmwfkacfqoehcrpwu.supabase.co";
-const String supabaseAnonKey =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjdnJtd2ZrYWNmcW9laGNycHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk0OTA5MTcsImV4cCI6MjA1NTA2NjkxN30.NWLuPpT7bZ1wp54umy4134b_HqyscOQ5kofDJDWNXZQ";
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    url: 'https://fcvrmwfkacfqoehcrpwu.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjdnJtd2ZrYWNmcW9laGNycHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk0OTA5MTcsImV4cCI6MjA1NTA2NjkxN30.NWLuPpT7bZ1wp54umy4134b_HqyscOQ5kofDJDWNXZQ',
   );
 
   runApp(const MyApp());
@@ -45,34 +42,58 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  String? _usernameError;
+  String? _passwordError;
 
-  final Map<String, String> users = {
-    'admin': '123',
-    'petugas': '123',
-    'pembeli': '123',
-  };
+  final SupabaseClient supabase = Supabase.instance.client;
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      String username = _usernameController.text;
-      String password = _passwordController.text;
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      if (!users.containsKey(username) || users[username] != password) {
+    setState(() {
+      _isLoading = true;
+      _usernameError = null;
+      _passwordError = null;
+    });
+
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+
+    try {
+      final response = await supabase
+          .from('user')
+          .select()
+          .eq('username', username)
+          .maybeSingle();
+
+      if (response == null) {
+        setState(() {
+          _usernameError = 'Username Salah';
+        });
+      } else if (response['password'] != password) {
+        setState(() {
+          _passwordError = 'Password salah';
+        });
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Username atau Password salah!')),
+          SnackBar(content: Text('Login berhasil sebagai $username!')),
         );
-        return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
       }
-
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login berhasil sebagai $username!')),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
     }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -104,15 +125,15 @@ class _LoginPageState extends State<LoginPage> {
                       fillColor: Colors.white,
                       prefixIcon: const Icon(Icons.person),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Color(0xFF4E342E))),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       hintText: 'Username',
+                      errorText: _usernameError,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Harap isi username';
-                      }
-                      return null;
+                    onChanged: (value) {
+                      setState(() {
+                        _usernameError = null;
+                      });
                     },
                   ),
                   const SizedBox(height: 15),
@@ -124,8 +145,8 @@ class _LoginPageState extends State<LoginPage> {
                       fillColor: Colors.white,
                       prefixIcon: const Icon(Icons.lock),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Color(0xFF4E342E))),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
@@ -139,28 +160,31 @@ class _LoginPageState extends State<LoginPage> {
                         },
                       ),
                       hintText: 'Password',
+                      errorText: _passwordError,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Harap isi password';
-                      }
-                      return null;
+                    onChanged: (value) {
+                      setState(() {
+                        _passwordError = null;
+                      });
                     },
                   ),
-                  const SizedBox(
-                    height: 20,
-                    width: 120,
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.brown[800],
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.brown[800],
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
+                      onPressed: _isLoading ? null : _login,
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('LOGIN',
+                              style: TextStyle(color: Colors.white)),
                     ),
-                    onPressed: _login,
-                    child: const Text('LOGIN',
-                        style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),

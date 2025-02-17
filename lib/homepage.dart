@@ -117,10 +117,11 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Detail Penjualan'),
               textColor: Colors.black,
               onTap: () {
-                //  Navigator.push(
-                //  context,
-                //    MaterialPageRoute(builder: (context) => IndexDetailJual(prd: prd)),
-                //  );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const DetailPenjualanIndex()),
+                );
               },
             ),
             ListTile(

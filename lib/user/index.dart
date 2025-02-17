@@ -20,23 +20,17 @@ class _IndexUserState extends State<IndexUser> {
     fetchUser();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    fetchUser();
-  }
-
   Future<void> fetchUser() async {
     try {
       final response = await Supabase.instance.client.from('user').select();
-
-      print(response);
 
       if (response != null && response is List) {
         setState(() {
           user = List<Map<String, dynamic>>.from(response);
         });
       }
+
+      print("Jumlah user dari Supabase: ${user.length}");
     } catch (e) {
       print('Error fetching user: $e');
     }
@@ -54,7 +48,6 @@ class _IndexUserState extends State<IndexUser> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.brown[800],
         title: const Text('Data User', style: TextStyle(color: Colors.white)),
@@ -128,7 +121,12 @@ class _IndexUserState extends State<IndexUser> {
                                         deleteUser(userId);
                                         Navigator.pop(context);
                                       },
-                                      child: const Text('Hapus'),
+                                      child: const Text(
+                                        'Hapus',
+                                        style: TextStyle(
+                                          backgroundColor: Color(0xFF4E342E),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -143,14 +141,9 @@ class _IndexUserState extends State<IndexUser> {
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const InsertUser()),
-          );
-          if (result == true) {
-            fetchUser();
-          }
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => const InsertUser()));
         },
         backgroundColor: Colors.brown[800],
         child: const Icon(Icons.add, color: Colors.white),

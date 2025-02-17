@@ -159,7 +159,7 @@ class _IndexPenjualanState extends State<IndexPenjualan> {
                                               title:
                                                   const Text('Hapus Penjualan'),
                                               content: const Text(
-                                                  'Apakah Anda yakin ingin menghapus penjualan ini?'),
+                                                  'AApakah anda yakin untuk menghapus penjualan?'),
                                               actions: [
                                                 TextButton(
                                                   onPressed: () =>
@@ -172,7 +172,12 @@ class _IndexPenjualanState extends State<IndexPenjualan> {
                                                         langgan['PenjualanID']);
                                                     Navigator.pop(context);
                                                   },
-                                                  child: const Text('Hapus'),
+                                                  child: const Text(
+                                                    'Hapus',
+                                                    style: TextStyle(
+                                                  backgroundColor: Color(0xFF4E342E),
+                                                  ),
+                                                  ),
                                                 ),
                                               ],
                                             );

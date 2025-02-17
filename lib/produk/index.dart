@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ukk_2025/produk/insert.dart';
-import 'package:ukk_2025/produk/beliproduk.dart';
 import 'package:ukk_2025/produk/update.dart';
 import 'package:ukk_2025/homepage.dart';
+import 'package:ukk_2025/produk/beliproduk.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class IndexProduk extends StatefulWidget {
@@ -18,6 +18,7 @@ class _IndexProdukState extends State<IndexProduk> {
   List<Map<String, dynamic>> produk = [];
   List<Map<String, dynamic>> filteredProduk = [];
   TextEditingController searchController = TextEditingController();
+  bool isSearchActive = false;
 
   @override
   void initState() {
@@ -25,23 +26,34 @@ class _IndexProdukState extends State<IndexProduk> {
     fetchProduk();
   }
 
-  Future<void> fetchProduk() async {
+      Future<void> fetchProduk() async {
+        try {
+          final response = await Supabase.instance.client.from('produk').select();
+          setState(() {
+            produk = List<Map<String, dynamic>>.from(response);
+            filteredProduk = produk;
+          });
+        } catch (e) {
+          print('Error fetching produk: $e');
+        }
+      }
+
+  Future<void> deleteProduk(int id) async {
     try {
-      final response = await Supabase.instance.client.from('produk').select();
-      setState(() {
-        produk = List<Map<String, dynamic>>.from(response);
-        filteredProduk = produk;
-      });
+      await Supabase.instance.client.from('produk').delete().eq('ProdukID', id);
+      fetchProduk();
     } catch (e) {
-      print('Error fetching produk: $e');
+      print('Error deleting produk: $e');
     }
   }
 
-  void filterSearch(String query) {
+  void filterSearch(String value) {
     setState(() {
       filteredProduk = produk
-          .where((item) =>
-              item['NamaProduk'].toLowerCase().contains(query.toLowerCase()))
+          .where((item) => item['NamaProduk']
+              .toString()
+              .toLowerCase()
+              .contains(value.toLowerCase()))
           .toList();
     });
   }
@@ -62,29 +74,44 @@ class _IndexProdukState extends State<IndexProduk> {
           },
         ),
         title: const Text(
-          'Menu Produk',
+          'Beranda Produk',
           style: TextStyle(color: Colors.white),
         ),
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(50.0),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: 'Cari...',
-                filled: true,
-                fillColor: Colors.white,
-                prefixIcon: Icon(Icons.search, color: Colors.brown),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              onChanged: (value) => filterSearch(value),
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                isSearchActive = !isSearchActive;
+                if (!isSearchActive) {
+                  searchController.clear();
+                  filteredProduk = produk;
+                }
+              });
+            },
           ),
-        ),
+        ],
+        bottom: isSearchActive
+            ? PreferredSize(
+                preferredSize: Size.fromHeight(50.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Cari Produk',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (value) => filterSearch(value),
+                  ),
+                ),
+              )
+            : null,
       ),
       body: Container(
         color: Colors.white,
@@ -157,6 +184,41 @@ class _IndexProdukState extends State<IndexProduk> {
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
+                              ),
+                              const Spacer(),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (widget.showFAB)
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.brown),
+                                      onPressed: () {
+                                        final ProdukID =
+                                            langgan['ProdukID'] ?? 0;
+                                        if (ProdukID != 0) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  UpdateProduk(
+                                                      ProdukID: ProdukID),
+                                            ),
+                                          );
+                                        } else {
+                                          print('ID produk tidak valid');
+                                        }
+                                      },
+                                    ),
+                                  if (widget.showFAB)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.brown),
+                                      onPressed: () {
+                                        deleteProduk(langgan['ProdukID']);
+                                      },
+                                    ),
+                                ],
                               ),
                             ],
                           ),

@@ -188,7 +188,12 @@ class _IndexPelangganState extends State<IndexPelanggan> {
                                               fetchPelanggan();
                                               Navigator.pop(context);
                                             },
-                                            child: const Text('Hapus'),
+                                            child: const Text(
+                                              'Hapus',
+                                              style: TextStyle(
+                                                  backgroundColor: Color(0xFF4E342E),
+                                                  ),
+                                            ),
                                           ),
                                         ],
                                       );
