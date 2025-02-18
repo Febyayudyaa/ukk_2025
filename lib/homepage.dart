@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:ukk_2025/detailpenjualan/index.dart';
 import 'package:ukk_2025/pelanggan/index.dart';
@@ -112,18 +113,22 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: const Text('Detail Penjualan'),
-              textColor: Colors.black,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const DetailPenjualanIndex()),
-                );
-              },
-            ),
+           ListTile(
+  leading: const Icon(Icons.receipt_long),
+  title: const Text('Detail Penjualan'),
+  textColor: Colors.black,
+  onTap: () {
+    int penjualanID = 123; // Ganti ini dengan nilai penjualanID yang sesuai
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailPenjualanIndex(penjualanI: penjualanID),
+      ),
+    );
+  },
+),
+
+
             ListTile(
               leading: const Icon(Icons.person_2_outlined),
               title: const Text('Data User'),

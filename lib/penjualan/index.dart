@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-// import 'package:kasirr/admin/home_admin.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk_2025/homepage.dart';
 import 'package:ukk_2025/penjualan/insert.dart';
-import 'package:ukk_2025/penjualan/update.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class IndexPenjualan extends StatefulWidget {
   const IndexPenjualan({super.key});
 
   @override
-  State<IndexPenjualan> createState() => _IndexPenjualanState();
+  State<IndexPenjualan> createState() => _IndexPenjualanPetugasState();
 }
 
-class _IndexPenjualanState extends State<IndexPenjualan> {
+class _IndexPenjualanPetugasState extends State<IndexPenjualan> {
   List<Map<String, dynamic>> penjualan = [];
+  List<int> selectedPenjualan = [];
 
   @override
   void initState() {
@@ -23,187 +22,72 @@ class _IndexPenjualanState extends State<IndexPenjualan> {
 
   Future<void> fetchPenjualan() async {
     try {
-      final response =
-          await Supabase.instance.client.from('penjualan').select();
+      final response = await Supabase.instance.client
+          .from('penjualan')
+          .select('*, pelanggan(*)');
       setState(() {
         penjualan = List<Map<String, dynamic>>.from(response);
       });
     } catch (e) {
-      print('Error fetching penjualan: $e');
+      print('Error: $e');
     }
   }
 
-  Future<void> deletePenjualan(int id) async {
-    try {
-      await Supabase.instance.client
-          .from('penjualan')
-          .delete()
-          .eq('PenjualanID', id);
-      fetchPenjualan();
-    } catch (e) {
-      print('Error deleting penjualan: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Menu Penjualan',
-          style: TextStyle(color: Colors.white),
-        ),
         backgroundColor: Colors.brown[800],
+        title: const Text('Data Penjualan', style: TextStyle(color: Colors.white)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
             Navigator.pushReplacement(
                 context, MaterialPageRoute(builder: (context) => HomePage()));
           },
         ),
       ),
-      body: Container(
-        color: Colors.white,
-        child: penjualan.isEmpty
-            ? const Center(
-                child: Text(
-                  'Tidak ada Riwayat Penjualan',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(8),
+      body: penjualan.isEmpty
+          ? const Center(child: Text('Penjualan', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),))
+          : Container(
+              padding: EdgeInsets.all(16),
+              child: ListView.builder(
                 itemCount: penjualan.length,
                 itemBuilder: (context, index) {
-                  final langgan = penjualan[index];
-                  return SizedBox(
-                    height: 145,
-                    child: Card(
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    langgan['TanggalPenjualan'] ??
-                                        'Tidak tersedia',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    langgan['TotalHarga']?.toString() ??
-                                        'Tidak tersedia',
-                                    style: const TextStyle(
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 15,
-                                        color: Colors.grey),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    langgan['PelangganID']?.toString() ??
-                                        'Tidak tersedia',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14),
-                                    textAlign: TextAlign.justify,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit,
-                                          color: Colors.brown, size: 28),
-                                      onPressed: () {
-                                        final PenjualanID =
-                                            langgan['PenjualanID'] ?? 0;
-                                        if (PenjualanID != 0) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  UpdatePenjualan(
-                                                      PenjualanID: PenjualanID),
-                                            ),
-                                          );
-                                        } else {
-                                          print('ID Penjualan tidak valid');
-                                        }
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Color(0xFF8D6E63)),
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return AlertDialog(
-                                              title: const Text('Hapus Produk'),
-                                              content: const Text(
-                                                  'Apakah Anda yakin ingin menghapus produk ini?'),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(context),
-                                                  child: const Text('Batal'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    deletePenjualan;
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: const Text(
-                                                    'Hapus',
-                                                    style: TextStyle(
-                                                      backgroundColor:
-                                                          Color(0xFF4E342E),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                  final pjl = penjualan[index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Nama Pelanggan: ${pjl['pelanggan']['NamaPelanggan'] ?? 'Tidak tersedia'}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18),
                         ),
-                      ),
+                        Text(
+                          'Tanggal: ${pjl['TanggalPenjualan'] ?? 'Tidak tersedia'}',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          'Total Harga: ${pjl['TotalHarga'] ?? 'Tidak tersedia'}',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => const InsertPenjualan()));
-        },
-        backgroundColor: Colors.brown[800],
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+            ),
+      // floatingActionButton: FloatingActionButton(onPressed: (){
+      //   Navigator.push(context, MaterialPageRoute(builder: (context) => InsertPenjualan(produk: pjl)));
+      // },
+      // child: Icon(Icons.add),
+      // ),
     );
   }
 }

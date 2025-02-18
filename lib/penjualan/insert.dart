@@ -1,135 +1,202 @@
 import 'package:flutter/material.dart';
-import 'package:ukk_2025/homepage.dart';
-import 'package:ukk_2025/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_2025/homepage.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class InsertPenjualan extends StatefulWidget {
-  const InsertPenjualan({super.key});
+  final Map<String, dynamic> produk;
+  const InsertPenjualan({Key? key, required this.produk}) : super(key: key);
 
   @override
   State<InsertPenjualan> createState() => _InsertPenjualanState();
 }
 
 class _InsertPenjualanState extends State<InsertPenjualan> {
-  final _formKey = GlobalKey<FormState>();
-  final _tglController = TextEditingController();
-  final _totalController = TextEditingController();
-  final _plnggnIdController = TextEditingController();
+  int jumlahPesanan = 0;
+  int stokakhir = 0;
+  int totalharga = 0;
+  int? selectedPelangganId;
+  List<Map<String, dynamic>> pelangganlist = [];
 
-  final SupabaseClient supabase = Supabase.instance.client;
-
-  Future<void> _saveData() async {
-  if (!_formKey.currentState!.validate()) return;
-
-  final TanggalPenjualan = DateTime.parse(_tglController.text); 
-  final TotalHarga = double.tryParse(_totalController.text) ?? 0.0;
-  final PelangganID = int.tryParse(_plnggnIdController.text) ?? 0;
-
-  try {
-    final response = await supabase.from('penjualan').insert({
-      'TanggalPenjualan': TanggalPenjualan.toIso8601String(), 
-      'TotalHarga': TotalHarga,
-      'PelangganID': PelangganID,
-    }).select();
-
-    if (response.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data berhasil disimpan!')),
-      );
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
-    } else {
-      throw Exception('Gagal menyimpan data.');
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Terjadi kesalahan: $e')),
-    );
+  @override
+  void initState() {
+    super.initState();
+    stokakhir = widget.produk['Stok'] ?? 0;
+    fetchPelanggan();
   }
-}
 
+  Future<void> fetchPelanggan() async {
+    final response = await Supabase.instance.client
+        .from('pelanggan')
+        .select('PelangganID, NamaPelanggan');
+    setState(() {
+      pelangganlist = List<Map<String, dynamic>>.from(response);
+    });
+  }
+
+  void updatedata(int harga, int delta) {
+    setState(() {
+      if (jumlahPesanan + delta >= 0 && jumlahPesanan + delta <= stokakhir) {
+        jumlahPesanan += delta;
+        totalharga = jumlahPesanan * harga;
+      }
+    });
+  }
+
+  Future<void> simpanpesanan() async {
+    final produkId = widget.produk['ProdukID'];
+    if (produkId == null || selectedPelangganId == null || jumlahPesanan <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                'Gagal menyimpan data, pastikan semua data telah terisi.')),
+      );
+      return;
+    }
+    try {
+      final penjualan = await Supabase.instance.client
+          .from('penjualan')
+          .insert(
+              {'TotalHarga': totalharga, 'PelangganID': selectedPelangganId})
+          .select()
+          .single();
+
+      if (penjualan.isNotEmpty) {
+        final penjualanId = penjualan['PenjualanID'];
+        await Supabase.instance.client.from('detailpenjualan').insert({
+          'PenjualanID': penjualanId,
+          'ProdukID': produkId,
+          'JumlahProduk': jumlahPesanan,
+          'Subtotal': totalharga
+        });
+
+        await Supabase.instance.client.from('produk').update(
+            {'Stok': stokakhir - jumlahPesanan}).eq('ProdukID', produkId);
+
+        cetak(penjualanId);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan saat menyimpan data.')));
+    }
+  }
+
+  Future<void> cetak(int penjualanId) async {
+    final confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Konfirmasi Cetak'),
+        content: Text('Apakah Anda ingin mencetak struk pembelian ini?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Batal')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('Cetak')),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      pdf(penjualanId);
+    } else {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => HomePage()));
+    }
+  }
+
+  Future<void> pdf(int penjualanId) async {
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('Struk Pembelian',
+                style:
+                    pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 16),
+            pw.Text('ID Penjualan: $penjualanId'),
+            pw.Text('Nama Produk: ${widget.produk['NamaProduk']}'),
+            pw.Text('Jumlah: $jumlahPesanan'),
+            pw.Text('Total Harga: Rp $totalharga'),
+            pw.SizedBox(height: 16),
+            pw.Text('Terima Kasih!',
+                style:
+                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => HomePage()));
+  }
 
   @override
   Widget build(BuildContext context) {
+    final produk = widget.produk;
+    final harga = produk['Harga'] ?? 0;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Tambah Penjualan',
-          style: TextStyle(color: Colors.white),
-        ),
-        elevation: 0,
+        title: const Text('Detail Produk'),
         backgroundColor: Colors.brown[800],
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context, MaterialPageRoute(builder: (context) => const InsertPenjualan()));
-          },
-        ),
       ),
-      body: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _tglController,
-                decoration: const InputDecoration(
-                  labelText: 'Tanggal Penjualan',
-                  border: OutlineInputBorder(),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButtonFormField<int>(
+              value: selectedPelangganId,
+              items: pelangganlist.map((pelanggan) {
+                return DropdownMenuItem<int>(
+                  value: pelanggan['PelangganID'],
+                  child: Text(pelanggan['NamaPelanggan']),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedPelangganId = value;
+                });
+              },
+              decoration: const InputDecoration(
+                labelText: 'Pilih Pelanggan',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  onPressed: () => updatedata(harga, -1),
+                  icon: const Icon(Icons.remove),
                 ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Tanggal tidak boleh kosong'
-                    : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _totalController,
-                decoration: const InputDecoration(
-                  labelText: 'Total Harga',
-                  border: OutlineInputBorder(),
+                Text('$jumlahPesanan', style: const TextStyle(fontSize: 20)),
+                IconButton(
+                  onPressed: () => updatedata(harga, 1),
+                  icon: const Icon(Icons.add),
                 ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Total harga tidak boleh kosong'
-                    : null,
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _plnggnIdController,
-                decoration: const InputDecoration(
-                  labelText: 'ID Pelanggan',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'ID Pelanggan tidak boleh kosong'
-                    : null,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-              onPressed: _saveData,
-              child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  width: double.infinity,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.brown[800],
-                    borderRadius: BorderRadius.circular(30)
-                  ),
-                  child: const Text(
-                    'SIMPAN',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                )
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: jumlahPesanan > 0 ? simpanpesanan : null,
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.brown[800]),
+              child: Text('Pesan ($totalharga)',
+                  style: const TextStyle(fontSize: 20)),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-

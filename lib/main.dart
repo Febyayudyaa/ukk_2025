@@ -1,5 +1,7 @@
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_2025/splashscreen.dart';
 import 'homepage.dart';
 
 void main() async {
@@ -84,9 +86,10 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+  context,
+  MaterialPageRoute(builder: (context) => SplashScreen()),
+);
+
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

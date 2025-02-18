@@ -18,7 +18,9 @@ class _IndexProdukState extends State<IndexProduk> {
   List<Map<String, dynamic>> produk = [];
   List<Map<String, dynamic>> filteredProduk = [];
   TextEditingController searchController = TextEditingController();
-  bool isSearchActive = false;
+  TextEditingController minPriceController = TextEditingController();
+  TextEditingController maxPriceController = TextEditingController();
+  bool isSearching = false;
 
   @override
   void initState() {
@@ -26,6 +28,7 @@ class _IndexProdukState extends State<IndexProduk> {
     fetchProduk();
   }
 
+  // Fungsi untuk mengambil produk dari Supabase
   Future<void> fetchProduk() async {
     try {
       final response = await Supabase.instance.client.from('produk').select();
@@ -38,36 +41,48 @@ class _IndexProdukState extends State<IndexProduk> {
     }
   }
 
+  // Fungsi untuk menghapus produk
   Future<void> deleteProduk(int ProdukID) async {
     try {
-      print('Menghapus produk dengan ID: $ProdukID');
+      print('Menghapusproduk dengan ID: $ProdukID');
 
-      final response = await Supabase.instance.client
+      await Supabase.instance.client
           .from('produk')
           .delete()
           .eq('ProdukID', ProdukID);
 
-      print('Response Supabase: $response');
+      print('Produk berhasil dihapus.');
 
-      if (response == null) {
-        print('Error: Tidak dapat menghapus produk.');
-      } else {
-        print('Produk berhasil dihapus.');
-        fetchProduk();
-      }
+      setState(() {
+        produk.removeWhere((item) => item['ProdukID'] == ProdukID);
+        filteredProduk = List.from(produk);
+      });
     } catch (e) {
-      print('Error dalam menghapus produk: $e');
+      print('Error menghapus produk: $e');
     }
   }
 
   void filterSearch(String value) {
+    double? minPrice = double.tryParse(minPriceController.text);
+    double? maxPrice = double.tryParse(maxPriceController.text);
+
     setState(() {
-      filteredProduk = produk
-          .where((item) => item['NamaProduk']
-              .toString()
-              .toLowerCase()
-              .contains(value.toLowerCase()))
-          .toList();
+      filteredProduk = produk.where((item) {
+        bool matchesName = item['NamaProduk']
+            .toString()
+            .toLowerCase()
+            .contains(value.toLowerCase());
+        bool matchesPrice = true;
+
+        if (minPrice != null && item['Harga'] < minPrice) {
+          matchesPrice = false;
+        }
+        if (maxPrice != null && item['Harga'] > maxPrice) {
+          matchesPrice = false;
+        }
+
+        return matchesName && matchesPrice;
+      }).toList();
     });
   }
 
@@ -92,35 +107,82 @@ class _IndexProdukState extends State<IndexProduk> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: Icon(isSearching ? Icons.close : Icons.search,
+                color: Colors.white),
             onPressed: () {
               setState(() {
-                isSearchActive = !isSearchActive;
-                if (!isSearchActive) {
+                isSearching = !isSearching;
+                if (!isSearching) {
                   searchController.clear();
+                  minPriceController.clear();
+                  maxPriceController.clear();
                   filteredProduk = produk;
                 }
               });
             },
           ),
         ],
-        bottom: isSearchActive
+        bottom: isSearching
             ? PreferredSize(
-                preferredSize: Size.fromHeight(50.0),
+                preferredSize: Size.fromHeight(100.0),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Cari Produk...',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Cari Produk...',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (value) => filterSearch(value),
                       ),
-                    ),
-                    onChanged: (value) => filterSearch(value),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: minPriceController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Harga Min',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: (value) =>
+                                  filterSearch(searchController.text),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: maxPriceController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Harga Max',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: (value) =>
+                                  filterSearch(searchController.text),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               )
@@ -155,7 +217,7 @@ class _IndexProdukState extends State<IndexProduk> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => Beliproduk(produk: langgan)),
+                            builder: (context) => harga(produk: langgan)),
                       );
                     },
                     child: Container(
@@ -242,16 +304,20 @@ class _IndexProdukState extends State<IndexProduk> {
                                                   child: const Text('Batal'),
                                                 ),
                                                 TextButton(
-                                                  onPressed: () {
-                                                    deleteProduk;
+                                                  onPressed: () async {
+                                                    await deleteProduk(
+                                                        langgan['ProdukID']);
                                                     Navigator.pop(context);
                                                   },
                                                   child: const Text(
                                                     'Hapus',
                                                     style: TextStyle(
-                                                      backgroundColor:
-                                                          Color(0xFF4E342E),
+                                                      color: Colors.white,
                                                     ),
+                                                  ),
+                                                  style: TextButton.styleFrom(
+                                                    backgroundColor:
+                                                        Colors.brown[800],
                                                   ),
                                                 ),
                                               ],

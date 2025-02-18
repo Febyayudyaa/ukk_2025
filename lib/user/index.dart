@@ -38,8 +38,18 @@ class _IndexUserState extends State<IndexUser> {
 
   Future<void> deleteUser(int id) async {
     try {
-      await Supabase.instance.client.from('user').delete().eq('id', id);
-      fetchUser();
+      print('Menghapus user dengan ID: $id');
+
+      final response =
+          await Supabase.instance.client.from('user').delete().eq('id', id);
+
+      print('Response Supabase: $response');
+
+      setState(() {
+        user.removeWhere((item) => item['id'] == id);
+      });
+
+      print('User berhasil dihapus.');
     } catch (e) {
       print('Error menghapus user: $e');
     }
@@ -97,7 +107,9 @@ class _IndexUserState extends State<IndexUser> {
                                 MaterialPageRoute(
                                   builder: (context) => UpdateUser(id: userId),
                                 ),
-                              );
+                              ).then((value) {
+                                fetchUser(); // Refresh setelah update
+                              });
                             }
                           },
                         ),
@@ -124,7 +136,7 @@ class _IndexUserState extends State<IndexUser> {
                                       child: const Text(
                                         'Hapus',
                                         style: TextStyle(
-                                          backgroundColor: Color(0xFF4E342E),
+                                          color: Colors.red,
                                         ),
                                       ),
                                     ),

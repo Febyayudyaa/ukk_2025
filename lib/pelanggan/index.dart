@@ -47,19 +47,17 @@ class _IndexPelangganState extends State<IndexPelanggan> {
     try {
       print('Menghapus pelanggan dengan ID: $PelangganID');
 
-      final response = await Supabase.instance.client
+      await Supabase.instance.client
           .from('pelanggan')
           .delete()
           .eq('PelangganID', PelangganID);
 
-      print('Response Supabase: $response');
+      print('Pelanggan berhasil dihapus.');
 
-      if (response == null) {
-        print('Error: Tidak dapat menghapus pelanggan.');
-      } else {
-        print('Pelanggan berhasil dihapus.');
-        fetchPelanggan();
-      }
+      setState(() {
+        pelanggan.removeWhere((item) => item['PelangganID'] == PelangganID);
+        filteredPelanggan = List.from(pelanggan);
+      });
     } catch (e) {
       print('Error menghapus pelanggan: $e');
     }
@@ -206,8 +204,8 @@ class _IndexPelangganState extends State<IndexPelanggan> {
                                             child: const Text('Batal'),
                                           ),
                                           TextButton(
-                                            onPressed: () {
-                                              deletePelanggan(
+                                            onPressed: () async {
+                                              await deletePelanggan(
                                                   langgan['PelangganID']);
                                               Navigator.pop(context);
                                             },

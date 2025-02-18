@@ -1,0 +1,3040 @@
+Gmail	Feby XII RPL 1 <xpplgfeby@gmail.com>
+(tanpa subjek)
+Feby XII RPL 1 <xpplgfeby@gmail.com>	17 Februari 2025 pukul 21.12
+Kepada: xiirplfeby <xiirplfeby@gmail.com>
+ind produk
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/produk/insert.dart';
+import 'package:ukk_2025/produk/update.dart';
+import 'package:ukk_2025/homepage.dart';
+import 'package:ukk_2025/produk/beliproduk.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class IndexProduk extends StatefulWidget {
+  final bool showFAB;
+
+  const IndexProduk({Key? key, this.showFAB = true}) : super(key: key);
+
+  @override
+  _IndexProdukState createState() => _IndexProdukState();
+}
+
+class _IndexProdukState extends State<IndexProduk> {
+  List<Map<String, dynamic>> produk = [];
+  List<Map<String, dynamic>> filteredProduk = [];
+  TextEditingController searchController = TextEditingController();
+  bool isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProduk();
+  }
+
+  Future<void> fetchProduk() async {
+    try {
+      final response = await Supabase.instance.client.from('produk').select();
+      setState(() {
+        produk = List<Map<String, dynamic>>.from(response);
+        filteredProduk = produk;
+      });
+    } catch (e) {
+      print('Error fetching produk: $e');
+    }
+  }
+
+  Future<void> deleteProduk(int ProdukID) async {
+    try {
+      print('Menghapus produk dengan ID: $ProdukID');
+
+      await Supabase.instance.client
+          .from('produk')
+          .delete()
+          .eq('ProdukID', ProdukID);
+
+      print('Produk berhasil dihapus.');
+
+      setState(() {
+        produk.removeWhere((item) => item['ProdukID'] == ProdukID);
+        filteredProduk = List.from(produk);
+      });
+    } catch (e) {
+      print('Error dalam menghapus produk: $e');
+    }
+  }
+
+  void filterSearch(String value) {
+    setState(() {
+      filteredProduk = produk
+          .where((item) => item['NamaProduk']
+              .toString()
+              .toLowerCase()
+              .contains(value.toLowerCase()))
+          .toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+              (route) => false,
+            );
+          },
+        ),
+        title: const Text(
+          'Beranda Produk',
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(isSearching ? Icons.close : Icons.search, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                isSearching = !isSearching;
+                if (!isSearching) {
+                  searchController.clear();
+                  filteredProduk = produk;
+                }
+              });
+            },
+          ),
+        ],
+        bottom: isSearching
+            ? PreferredSize(
+                preferredSize: Size.fromHeight(50.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Cari Produk...',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (value) => filterSearch(value),
+                  ),
+                ),
+              )
+            : null,
+      ),
+      body: Container(
+        color: Colors.white,
+        child: filteredProduk.isEmpty
+            ? const Center(
+                child: Text(
+                  'Tidak ada produk',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              )
+            : GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1 / 1,
+                ),
+                itemCount: filteredProduk.length,
+                itemBuilder: (context, index) {
+                  final langgan = filteredProduk[index];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => Beliproduk(produk: langgan)),
+                      );
+                    },
+                    child: Container(
+                      width: 160,
+                      height: 200,
+                      child: Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                langgan['NamaProduk'] ?? 'Produk tidak tersedia',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Harga: ${langgan['Harga'] ?? 'Tidak tersedia'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.brown,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Stok: ${langgan['Stok'] ?? 'Tidak tersedia'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const Spacer(),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (widget.showFAB)
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.brown),
+                                      onPressed: () {
+                                        final ProdukID =
+                                            langgan['ProdukID'] ?? 0;
+                                        if (ProdukID != 0) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  UpdateProduk(
+                                                      ProdukID: ProdukID),
+                                            ),
+                                          );
+                                        } else {
+                                          print('ID produk tidak valid');
+                                        }
+                                      },
+                                    ),
+                                  if (widget.showFAB)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Color(0xFF8D6E63)),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: const Text('Hapus Produk'),
+                                              content: const Text('Apakah Anda yakin ingin menghapus produk ini?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  child: const Text('Batal'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () async {
+                                                    await deleteProduk(langgan['ProdukID']);
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text(
+                                                    'Hapus',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  style: TextButton.styleFrom(
+                                                    backgroundColor: Colors.brown[800], 
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
+      floatingActionButton: widget.showFAB
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => InsertProduk()));
+              },
+              backgroundColor: Colors.brown[800],
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+
+ins produk
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; 
+import 'package:ukk_2025/produk/index.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class InsertProduk extends StatefulWidget {
+  @override
+  _InsertProdukState createState() => _InsertProdukState();
+}
+
+class _InsertProdukState extends State<InsertProduk> {
+  final _formKey = GlobalKey<FormState>();
+  final _namaController = TextEditingController();
+  final _hargaController = TextEditingController();
+  final _stokController = TextEditingController();
+
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  Future<void> _saveData() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  final nama = _namaController.text;
+  double? harga;
+  int? stok;
+
+  try {
+    harga = double.tryParse(_hargaController.text);
+    stok = int.tryParse(_stokController.text);
+
+    if (harga == null || stok == null) {
+      throw Exception("Harga atau stok tidak valid!");
+    }
+
+    final response = await supabase.from('produk').insert({
+      'NamaProduk': nama,
+      'Harga': harga,
+      'Stok': stok,
+    }).select(); 
+
+    if (response.isEmpty) {
+      throw Exception("Gagal menyimpan data ke database.");
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Data berhasil disimpan!')),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => IndexProduk()),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Terjadi kesalahan: $e')),
+    );
+  }
+}
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tambah Produk', style: TextStyle(color: Colors.white)),
+        elevation: 0,
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: Container(
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _namaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Produk',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value == null || value.isEmpty ? 'Nama Produk tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _hargaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Harga',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
+                  ],
+                  validator: (value) => value == null || value.isEmpty ? 'Harga tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _stokController,
+                  decoration: const InputDecoration(
+                    labelText: 'Stok',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number, 
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (value) => value == null || value.isEmpty ? 'Stok tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _saveData,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.brown[800],
+                      borderRadius: BorderRadius.circular(30)
+                    ),
+                    child: const Text(
+                      'SIMPAN',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+upd produk
+
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/produk/index.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class UpdateProduk extends StatefulWidget {
+  final int ProdukID;
+
+  const UpdateProduk({super.key, required this.ProdukID});
+
+  @override
+  State<UpdateProduk> createState() => _UpdateProdukState();
+}
+
+class _UpdateProdukState extends State<UpdateProduk> {
+  final _nmprdk = TextEditingController();
+  final _harga = TextEditingController();
+  final _stok = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProdukData();
+  }
+
+  Future<void> _loadProdukData() async {
+    try {
+      final data = await Supabase.instance.client
+          .from('produk')
+          .select()
+          .eq('ProdukID', widget.ProdukID)
+          .single();
+
+      setState(() {
+        _nmprdk.text = data['NamaProduk'] ?? '';
+        _harga.text = data['Harga']?.toString() ?? '';
+        _stok.text = data['Stok']?.toString() ?? '';
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mengambil data: $e')),
+      );
+    }
+  }
+
+  Future<void> updateProduk() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        await Supabase.instance.client.from('produk').update({
+          'NamaProduk': _nmprdk.text,
+          'Harga': double.tryParse(_harga.text) ?? 0,
+          'Stok': int.tryParse(_stok.text) ?? 0,
+        }).eq('ProdukID', widget.ProdukID);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data berhasil diperbarui!')),
+        );
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => IndexProduk()),
+          (route) => false,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Produk', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nmprdk,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Produk',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value!.isEmpty ? 'Nama tidak boleh kosong' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _harga,
+                decoration: const InputDecoration(
+                  labelText: 'Harga',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Harga tidak boleh kosong';
+                  if (double.tryParse(value) == null)
+                    return 'Masukkan angka yang valid';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _stok,
+                decoration: const InputDecoration(
+                  labelText: 'Stok',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Stok tidak boleh kosong';
+                  if (int.tryParse(value) == null)
+                    return 'Masukkan angka yang valid';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: updateProduk,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: Colors.brown[800],
+                ),
+                child:
+                    const Text('Update', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+ind user
+
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/produk/index.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class UpdateProduk extends StatefulWidget {
+  final int ProdukID;
+
+  const UpdateProduk({super.key, required this.ProdukID});
+
+  @override
+  State<UpdateProduk> createState() => _UpdateProdukState();
+}
+
+class _UpdateProdukState extends State<UpdateProduk> {
+  final _nmprdk = TextEditingController();
+  final _harga = TextEditingController();
+  final _stok = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProdukData();
+  }
+
+  Future<void> _loadProdukData() async {
+    try {
+      final data = await Supabase.instance.client
+          .from('produk')
+          .select()
+          .eq('ProdukID', widget.ProdukID)
+          .single();
+
+      setState(() {
+        _nmprdk.text = data['NamaProduk'] ?? '';
+        _harga.text = data['Harga']?.toString() ?? '';
+        _stok.text = data['Stok']?.toString() ?? '';
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mengambil data: $e')),
+      );
+    }
+  }
+
+  Future<void> updateProduk() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        await Supabase.instance.client.from('produk').update({
+          'NamaProduk': _nmprdk.text,
+          'Harga': double.tryParse(_harga.text) ?? 0,
+          'Stok': int.tryParse(_stok.text) ?? 0,
+        }).eq('ProdukID', widget.ProdukID);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data berhasil diperbarui!')),
+        );
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => IndexProduk()),
+          (route) => false,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Produk', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nmprdk,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Produk',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value!.isEmpty ? 'Nama tidak boleh kosong' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _harga,
+                decoration: const InputDecoration(
+                  labelText: 'Harga',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Harga tidak boleh kosong';
+                  if (double.tryParse(value) == null)
+                    return 'Masukkan angka yang valid';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _stok,
+                decoration: const InputDecoration(
+                  labelText: 'Stok',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Stok tidak boleh kosong';
+                  if (int.tryParse(value) == null)
+                    return 'Masukkan angka yang valid';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: updateProduk,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: Colors.brown[800],
+                ),
+                child:
+                    const Text('Update', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+ins user
+
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_2025/user/index.dart';
+
+class InsertUser extends StatefulWidget {
+  const InsertUser({super.key});
+
+  @override
+  State<InsertUser> createState() => _InsertUserState();
+}
+
+class _InsertUserState extends State<InsertUser> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String? _selectedRole;
+  bool _isObscure = true; 
+
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  Future<void> _saveData() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final username = _usernameController.text;
+    final password = _passwordController.text;
+    final role = _selectedRole;
+
+    try {
+      await supabase.from('user').insert({
+        'username': username,
+        'password': password,
+        'role': role,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data berhasil disimpan!')),
+      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const IndexUser()));
+    } on PostgrestException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: ${e.message}')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tambah Data User', style: TextStyle(color: Colors.white)),
+        elevation: 0,
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+        ),
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Username tidak boleh kosong' : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _isObscure, 
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isObscure ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isObscure = !_isObscure;
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Password tidak boleh kosong' : null,
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                items: ['Admin', 'Petugas', 'Pembeli']
+                    .map((role) => DropdownMenuItem(value: role, child: Text(role)))
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedRole = value),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Role tidak boleh kosong' : null,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, 
+                child: ElevatedButton(
+                  onPressed: _saveData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown[800],
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: const Text(
+                    'SIMPAN',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+upd user
+
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/user/index.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class UpdateUser extends StatefulWidget {
+  final int id;
+
+  const UpdateUser({super.key, required this.id});
+
+  @override
+  State<UpdateUser> createState() => _UpdateUserState();
+}
+
+class _UpdateUserState extends State<UpdateUser> {
+  final _username = TextEditingController();
+  final _password = TextEditingController();
+  final _role = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+  try {
+    final data = await Supabase.instance.client
+        .from('user')
+        .select()
+        .eq('id', widget.id)
+        .maybeSingle();
+
+    if (data == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
+      Navigator.pop(context);
+      return;
+    }
+
+    setState(() {
+      _username.text = data['username'] ?? '';
+      _password.text = data['password'] ?? '';
+      _role.text = data['role'] ?? '';
+    });
+  } catch (e) {
+    print('Error loading user: $e');
+  }
+}
+
+Future<void> updateUser() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  try {
+    await Supabase.instance.client.from('user').update({
+      'username': _username.text,
+      'password': _password.text,
+      'role': _role.text,
+    }).eq('id', widget.id);
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data berhasil diperbarui')));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const IndexUser()));
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+  }
+}
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit User', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.pop(
+                context, MaterialPageRoute(builder: (context) => IndexUser()));
+          },
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(color: Colors.white),
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _username,
+                decoration: const InputDecoration(
+                  labelText: 'username',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Username tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _password,
+                decoration: const InputDecoration(
+                  labelText: 'password',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Password tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _role,
+                decoration: const InputDecoration(
+                  labelText: 'role',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Role tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: updateUser,
+                    child: Text(
+                      'Update',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 50),
+                      backgroundColor: Colors.brown[800],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+homepage
+
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/detailpenjualan/index.dart';
+import 'package:ukk_2025/pelanggan/index.dart';
+import 'package:ukk_2025/penjualan/index.dart';
+import 'package:ukk_2025/produk/index.dart';
+import 'package:ukk_2025/user/index.dart';
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _pages = <Widget>[
+    Center(
+        child: Text(
+      'Produk',
+      style: TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+    )),
+    Center(
+        child: Text(
+      'Pelanggan',
+      style: TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+    )),
+    Center(
+        child: Text(
+      'Penjualan',
+      style: TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+    )),
+    Center(
+        child: Text(
+      'Detail Penjualan',
+      style: TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+    )),
+    Center(
+        child: Text(
+      'User',
+      style: TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4E342E)),
+    )),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Beranda Cookielicious'),
+        backgroundColor: Colors.brown[800],
+        foregroundColor: Colors.white,
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Color(0xFF4E342E),
+              ),
+              child: Text(
+                'Dashboard Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_bag),
+              title: const Text('Produk'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const IndexProduk()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text('Pelanggan'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => IndexPelanggan()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.point_of_sale),
+              title: const Text('Penjualan'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => IndexPenjualan()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long),
+              title: const Text('Detail Penjualan'),
+              textColor: Colors.black,
+              onTap: () {
+                // Misalnya Anda ingin mengirimkan PenjualanID yang sudah ada
+                int penjualanID = 123; // Ganti dengan ID yang sesuai, bisa diambil dari item yang relevan
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailPenjualanIndex(PenjualanID: penjualanID),
+                  ),
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.person_2_outlined),
+              title: const Text('Data User'),
+              textColor: Colors.black,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => IndexUser()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      body: _pages[_selectedIndex],
+    );
+  }
+}
+
+
+main
+
+
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_2025/splashscreen.dart';
+import 'homepage.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://fcvrmwfkacfqoehcrpwu.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjdnJtd2ZrYWNmcW9laGNycHd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk0OTA5MTcsImV4cCI6MjA1NTA2NjkxN30.NWLuPpT7bZ1wp54umy4134b_HqyscOQ5kofDJDWNXZQ',
+  );
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Login Page',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const LoginPage(),
+    );
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  String? _usernameError;
+  String? _passwordError;
+
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+
+    setState(() {
+      _usernameError = username.isEmpty ? 'Harap Isi Username' : null;
+      _passwordError = password.isEmpty ? 'Harap Masukan Password' : null;
+    });
+
+    try {
+      final response = await supabase
+          .from('user')
+          .select()
+          .eq('username', username)
+          .maybeSingle();
+
+      if (response == null) {
+        setState(() {
+          _usernameError = 'Harap Benahi Username';
+        });
+      } else if (response['password'] != password) {
+        setState(() {
+          _passwordError = 'Harap Benahi Password';
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login berhasil sebagai $username!')),
+        );
+
+        Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (context) => SplashScreen()),
+);
+
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.brown[800],
+      ),
+      backgroundColor: Colors.brown[50],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'asset/image/cookies logo.png',
+                    height: 250,
+                    width: 500,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: const Icon(Icons.person),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      hintText: 'Username',
+                      errorText: _usernameError,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _usernameError = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: !_isPasswordVisible,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: const Icon(Icons.lock),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                      ),
+                      hintText: 'Password',
+                      errorText: _passwordError,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _passwordError = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.brown[800],
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: _isLoading ? null : _login,
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('LOGIN',
+                              style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+splshscr
+
+
+import 'package:flutter/material.dart';
+import 'homepage.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 3), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.brown[50],
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CustomPaint(
+              painter: TextCurvePainter(),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Text(
+                  'Step into the sweet world of Cookielicious!',
+                  style: GoogleFonts.roboto(
+                    fontSize: 32, 
+                    fontWeight: FontWeight.bold,
+                    color: Colors.brown[800], 
+                  ),
+                ),
+              ),
+            ),
+            TweenAnimationBuilder(
+              tween: Tween<double>(begin: 0.5, end: 1.2),
+              duration: const Duration(seconds: 2),
+              curve: Curves.elasticOut,
+              builder: (context, double scale, child) {
+                return Transform.scale(
+                  scale: scale,
+                  child: child,
+                );
+              },
+              child: Image.asset(
+                'asset/image/cookies logo.png',
+                height: 250,
+                width: 250,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TextCurvePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()
+      ..color = Colors.transparent
+      ..style = PaintingStyle.fill;
+
+    Path path = Path();
+    path.lineTo(0, size.height / 2);
+    path.quadraticBezierTo(size.width / 4, size.height, size.width / 2, size.height);
+    path.quadraticBezierTo(3 * size.width / 4, size.height, size.width, size.height / 2);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
+}
+
+
+
+ind pelanggan
+
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/pelanggan/insert.dart';
+import 'package:ukk_2025/pelanggan/update.dart';
+import 'package:ukk_2025/homepage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class IndexPelanggan extends StatefulWidget {
+  @override
+  _IndexPelangganState createState() => _IndexPelangganState();
+}
+
+class _IndexPelangganState extends State<IndexPelanggan> {
+  List<Map<String, dynamic>> pelanggan = [];
+  List<Map<String, dynamic>> filteredPelanggan = [];
+  TextEditingController searchController = TextEditingController();
+  bool isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPelanggan();
+  }
+
+  Future<void> fetchPelanggan() async {
+    try {
+      final response =
+          await Supabase.instance.client.from('pelanggan').select();
+      setState(() {
+        pelanggan = List<Map<String, dynamic>>.from(response);
+        filteredPelanggan = pelanggan;
+      });
+    } catch (e) {
+      print('Error fetching pelanggan: $e');
+    }
+  }
+
+  void filterSearch(String query) {
+    setState(() {
+      filteredPelanggan = pelanggan
+          .where((item) =>
+              item['NamaPelanggan'].toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
+  Future<void> deletePelanggan(int PelangganID) async {
+  try {
+    print('Menghapus pelanggan dengan ID: $PelangganID');
+
+    await Supabase.instance.client
+        .from('pelanggan')
+        .delete()
+        .eq('PelangganID', PelangganID);
+
+    print('Pelanggan berhasil dihapus.');
+
+    setState(() {
+      pelanggan.removeWhere((item) => item['PelangganID'] == PelangganID);
+      filteredPelanggan = List.from(pelanggan);
+    });
+  } catch (e) {
+    print('Error menghapus pelanggan: $e');
+  }
+}
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+              (route) => false,
+            );
+          },
+        ),
+        title: isSearching
+            ? TextField(
+                controller: searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Cari Pelanggan...',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (value) => filterSearch(value),
+              )
+            : const Text(
+                'Daftar Pelanggan',
+                style: TextStyle(color: Colors.white),
+              ),
+        actions: [
+          IconButton(
+            icon: Icon(isSearching ? Icons.close : Icons.search,
+                color: Colors.white),
+            onPressed: () {
+              setState(() {
+                isSearching = !isSearching;
+                if (!isSearching) {
+                  searchController.clear();
+                  filteredPelanggan = pelanggan;
+                }
+              });
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        color: Colors.white,
+        child: filteredPelanggan.isEmpty
+            ? const Center(
+                child: Text(
+                  'Tidak ada pelanggan',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: filteredPelanggan.length,
+                itemBuilder: (context, index) {
+                  final langgan = filteredPelanggan[index];
+                  return Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            langgan['NamaPelanggan'] ??
+                                'Pelanggan tidak tersedia',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            langgan['Alamat'] ?? 'Alamat tidak tersedia',
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.black),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            langgan['NomorTelepon'] ?? 'Tidak tersedia',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Color(0xFF8D6E63)),
+                                onPressed: () {
+                                  final pelangganID =
+                                      langgan['PelangganID'] as int?;
+                                  if (pelangganID != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditPelanggan(
+                                            PelangganID: pelangganID),
+                                      ),
+                                    ).then((value) {
+                                      if (value == true) {
+                                        fetchPelanggan();
+                                      }
+                                    });
+                                  } else {
+                                    print('ID pelanggan tidak valid');
+                                  }
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Color(0xFF8D6E63)),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: const Text('Hapus Pelanggan'),
+                                        content: const Text(
+                                            'Apakah Anda yakin ingin menghapus pelanggan ini?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: const Text('Batal'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                            await deletePelanggan(langgan['PelangganID']);
+                                            Navigator.pop(context);
+                                          },
+
+                                            child: const Text(
+                                              'Hapus',
+                                              style: TextStyle(
+                                                backgroundColor:
+                                                    Color(0xFF4E342E),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => InsertPelangganPage()),
+          );
+          fetchPelanggan();
+        },
+        backgroundColor: Colors.brown[800],
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+
+ins pelanggan
+
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class InsertPelangganPage extends StatefulWidget {
+  @override
+  _InsertPelangganPageState createState() => _InsertPelangganPageState();
+}
+
+class _InsertPelangganPageState extends State<InsertPelangganPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _namaController = TextEditingController();
+  final _alamatController = TextEditingController();
+  final _nomorTeleponController = TextEditingController();
+
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  Future<void> _saveData() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final nama = _namaController.text;
+    final alamat = _alamatController.text;
+    final nomorTelepon = _nomorTeleponController.text;
+
+    try {
+      final response = await supabase.from('pelanggan').insert({
+        'NamaPelanggan': nama,
+        'Alamat': alamat,
+        'NomorTelepon': nomorTelepon,
+      }).select();
+
+      if (response.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Data berhasil disimpan!')),
+        );
+        Navigator.pop(context, {
+          'Nama': nama,
+          'Alamat': alamat,
+          'Nomor Telepon': nomorTelepon,
+        });
+      } else {
+        throw Exception('Gagal menyimpan data.');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Tambah Pelanggan'),
+        backgroundColor: Colors.brown[800],
+        foregroundColor: Colors.white,
+      ),
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _namaController,
+                decoration: InputDecoration(labelText: 'Nama Pelanggan'),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Nama tidak boleh kosong'
+                    : null,
+              ),
+              TextFormField(
+                controller: _alamatController,
+                decoration: InputDecoration(labelText: 'Alamat'),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Alamat tidak boleh kosong'
+                    : null,
+              ),
+              TextFormField(
+                controller: _nomorTeleponController,
+                decoration: InputDecoration(labelText: 'Nomor Telepon'),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Nomor Telepon tidak boleh kosong';
+                  } else if (value.length < 5) {
+                    return 'Nomor telepon tidak valid';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saveData,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.brown[800],
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('SIMPAN'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+upd pelanggan
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/homepage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class EditPelanggan extends StatefulWidget {
+  final int PelangganID;
+
+  const EditPelanggan({super.key, required this.PelangganID});
+
+  @override
+  State<EditPelanggan> createState() => _EditPelangganState();
+}
+
+class _EditPelangganState extends State<EditPelanggan> {
+  final _nmplg = TextEditingController();
+  final _alamat = TextEditingController();
+  final _notlp = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPelangganData();
+  }
+
+  Future<void> _loadPelangganData() async {
+    try {
+      final data = await Supabase.instance.client
+          .from('pelanggan')
+          .select()
+          .eq('PelangganID', widget.PelangganID)
+          .single();
+
+      setState(() {
+        _nmplg.text = data['NamaPelanggan'] ?? '';
+        _alamat.text = data['Alamat'] ?? '';
+        _notlp.text = data['NomorTelepon'] ?? '';
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat data pelanggan: $e')),
+      );
+    }
+  }
+
+  Future<void> updatePelanggan() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        await Supabase.instance.client.from('pelanggan').update({
+          'NamaPelanggan': _nmplg.text,
+          'Alamat': _alamat.text,
+          'NomorTelepon': _notlp.text,
+        }).eq('PelangganID', widget.PelangganID);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pelanggan berhasil diperbarui!')),
+        );
+
+        await Future.delayed(const Duration(seconds: 1));
+
+        // Menggunakan Navigator.pop untuk kembali ke halaman sebelumnya dan memperbarui daftar pelanggan
+        Navigator.pop(context,
+            true); // Mengirimkan nilai true untuk menandakan data telah diperbarui
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memperbarui pelanggan: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Pelanggan'),
+        backgroundColor: Colors.brown[700],
+        foregroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _nmplg,
+                decoration: const InputDecoration(
+                  labelText: 'Nama Pelanggan',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Nama tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _alamat,
+                decoration: const InputDecoration(
+                  labelText: 'Alamat',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Alamat tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _notlp,
+                decoration: const InputDecoration(
+                  labelText: 'Nomor Telepon',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Nomor telepon tidak boleh kosong';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: updatePelanggan,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.brown[800],
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Update',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+detailpenjualan
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/homepage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class DetailPenjualanIndex extends StatefulWidget {
+  final int PenjualanID;  // Kapital pada PenjualanID
+
+  const DetailPenjualanIndex({Key? key, required this.PenjualanID}) : super(key: key);  // Kapital pada PenjualanID
+
+  @override
+  _DetailPenjualanIndexState createState() => _DetailPenjualanIndexState();
+}
+
+class _DetailPenjualanIndexState extends State<DetailPenjualanIndex> {
+  List<Map<String, dynamic>> riwayatPesanan = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchRiwayatPesanan();
+  }
+
+  Future<void> fetchRiwayatPesanan() async {
+    final supabase = Supabase.instance.client;
+    final response = await supabase.from('detailpenjualan').select('''
+        DetailID, 
+        PenjualanID, 
+        ProdukID, 
+        JumlahProduk, 
+        Subtotal, 
+        penjualan.PelangganID,  // Mengambil PelangganID dari tabel penjualan
+        produk(NamaProduk, Harga), 
+        pelanggan(NamaPelanggan)
+    ''').eq('PenjualanID', widget.PenjualanID); // Akses widget.PenjualanID
+
+    // Cek apakah response ada datanya
+    if (response != null && response is List && response.isNotEmpty) {
+      setState(() {
+        riwayatPesanan = List<Map<String, dynamic>>.from(response);
+      });
+    } else {
+      setState(() {
+        riwayatPesanan = []; // Kosongkan jika tidak ada data
+      });
+    }
+  }
+
+  Future<void> hapusPesanan(int detailID) async {
+    final supabase = Supabase.instance.client;
+    await supabase
+        .from('detailpenjualan')
+        .delete()
+        .match({'DetailID': detailID});
+    fetchRiwayatPesanan();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pesanan Produk berhasil dihapus')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detail Penjualan', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomePage()),
+              (route) => false,  // Hapus semua route sebelumnya dari stack
+            );
+          }
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: riwayatPesanan.length,
+        itemBuilder: (context, index) {
+          final pesanan = riwayatPesanan[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: ListTile(
+              title: Text(
+                '${pesanan['produk']['NamaProduk'] ?? 'Produk Tidak Diketahui'} - ${pesanan['pelanggan']['NamaPelanggan'] ?? 'Tanpa Nama'}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                  'Jumlah: ${pesanan['JumlahProduk']} - Total: Rp${pesanan['Subtotal']}'),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.brown),
+                onPressed: () => hapusPesanan(pesanan['DetailID']),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+
+ind penjualan
+
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/detailpenjualan/index.dart';
+import 'package:ukk_2025/homepage.dart';
+import 'package:ukk_2025/penjualan/insert.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class IndexPenjualan extends StatefulWidget {
+  const IndexPenjualan({super.key});
+
+  @override
+  State<IndexPenjualan> createState() => _IndexPenjualanState();
+}
+
+class _IndexPenjualanState extends State<IndexPenjualan> {
+  List<Map<String, dynamic>> penjualan = [];
+  List<Map<String, dynamic>> pelangganList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPenjualan();
+    fetchPelanggan();
+  }
+
+  Future<void> fetchPenjualan() async {
+    try {
+      final response =
+          await Supabase.instance.client.from('penjualan').select();
+      setState(() {
+        penjualan = List<Map<String, dynamic>>.from(response);
+      });
+    } catch (e) {
+      print('Error fetching penjualan: $e');
+    }
+  }
+
+  Future<void> fetchPelanggan() async {
+    try {
+      final response =
+          await Supabase.instance.client.from('pelanggan').select();
+      setState(() {
+        pelangganList = List<Map<String, dynamic>>.from(response);
+      });
+    } catch (e) {
+      print('Error fetching pelanggan: $e');
+    }
+  }
+
+  Future<void> deletePenjualan(int id) async {
+    try {
+      await Supabase.instance.client
+          .from('penjualan')
+          .delete()
+          .eq('PenjualanID', id);
+      fetchPenjualan();
+    } catch (e) {
+      print('Error deleting penjualan: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Menu Penjualan',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (context) => HomePage()));
+          },
+        ),
+      ),
+      body: Container(
+        color: Colors.white,
+        child: penjualan.isEmpty
+            ? const Center(
+                child: Text(
+                  'Tidak ada Riwayat Penjualan',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: penjualan.length,
+                itemBuilder: (context, index) {
+                  final penjualanItem = penjualan[index];
+
+                  // Menemukan nama pelanggan berdasarkan PelangganID
+                  final pelanggan = pelangganList.firstWhere(
+                      (p) => p['PelangganID'] == penjualanItem['PelangganID'],
+                      orElse: () => {'NamaPelanggan': 'Tidak Ditemukan'});
+
+                  return SizedBox(
+                    height: 145,
+                    child: Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    penjualanItem['TanggalPenjualan'] ?? 
+                                        'Tidak tersedia',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    penjualanItem['TotalHarga']?.toString() ?? 
+                                        'Tidak tersedia',
+                                    style: const TextStyle(
+                                        fontStyle: FontStyle.italic,
+                                        fontSize: 15,
+                                        color: Colors.grey),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    pelanggan['NamaPelanggan'] ?? 
+                                        'Tidak tersedia',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14),
+                                    textAlign: TextAlign.justify,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Color(0xFF8D6E63)),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: const Text('Hapus Penjualan'),
+                                              content: const Text(
+                                                  'Apakah Anda yakin ingin menghapus penjualan ini?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                  child: const Text('Batal'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    deletePenjualan(penjualanItem['PenjualanID']);
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text(
+                                                    'Hapus',
+                                                    style: TextStyle(
+                                                      backgroundColor:
+                                                          Color(0xFF4E342E),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    // Tombol pesan
+                                    IconButton(
+                                      icon: const Icon(Icons.shopping_bag, color: Colors.brown),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => DetailPenjualanIndex(PenjualanID: penjualanItem['PenjualanID']),
+                                          ),
+                                        );
+                                      },
+                                    ),
+
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => const InsertPenjualan()));
+        },
+        backgroundColor: Colors.brown[800],
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+}
+
+
+
+ins penjualan
+
+
+import 'package:flutter/material.dart';
+import 'package:ukk_2025/homepage.dart';
+import 'package:ukk_2025/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class InsertPenjualan extends StatefulWidget {
+  const InsertPenjualan({super.key});
+
+  @override
+  State<InsertPenjualan> createState() => _InsertPenjualanState();
+}
+
+class _InsertPenjualanState extends State<InsertPenjualan> {
+  final _formKey = GlobalKey<FormState>();
+  final _tglController = TextEditingController();
+  final _totalController = TextEditingController();
+  final _plnggnIdController = TextEditingController();
+
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  Future<void> _saveData() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  final TanggalPenjualan = DateTime.parse(_tglController.text); 
+  final TotalHarga = double.tryParse(_totalController.text) ?? 0.0;
+  final PelangganID = int.tryParse(_plnggnIdController.text) ?? 0;
+
+  try {
+    final response = await supabase.from('penjualan').insert({
+      'TanggalPenjualan': TanggalPenjualan.toIso8601String(), 
+      'TotalHarga': TotalHarga,
+      'PelangganID': PelangganID,
+    }).select();
+
+    if (response.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data berhasil disimpan!')),
+      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
+    } else {
+      throw Exception('Gagal menyimpan data.');
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Terjadi kesalahan: $e')),
+    );
+  }
+}
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Tambah Penjualan',
+          style: TextStyle(color: Colors.white),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.brown[800],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios,color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context, MaterialPageRoute(builder: (context) => const InsertPenjualan()));
+          },
+        ),
+      ),
+      body: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _tglController,
+                decoration: const InputDecoration(
+                  labelText: 'Tanggal Penjualan',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Tanggal tidak boleh kosong'
+                    : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _totalController,
+                decoration: const InputDecoration(
+                  labelText: 'Total Harga',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Total harga tidak boleh kosong'
+                    : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _plnggnIdController,
+                decoration: const InputDecoration(
+                  labelText: 'ID Pelanggan',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'ID Pelanggan tidak boleh kosong'
+                    : null,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+              onPressed: _saveData,
+              child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.brown[800],
+                    borderRadius: BorderRadius.circular(30)
+                  ),
+                  child: const Text(
+                    'SIMPAN',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                )
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+yaml
+name: ukk_2025
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.6
+  supabase_flutter: ^2.8.3
+  loading_animation_widget: ^1.3.0
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - asset/image/cookies logo.png
+    - asset/image/cocococo.jpg
+
+
+
+struk
+import 'dart:io';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:html' as html;  // Menggunakan dart:html untuk Web-specific operations.
+
+class DetailPenjualan extends StatefulWidget {
+  final int penjualanId;
+  final Map<String, dynamic> transaksi;
+
+  const DetailPenjualan({super.key, required this.penjualanId, required this.transaksi});
+
+  @override
+  _DetailPenjualanState createState() => _DetailPenjualanState();
+}
+
+class _DetailPenjualanState extends State<DetailPenjualan> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  Map<String, dynamic>? transaksi;
+  List<Map<String, dynamic>> detailPenjualan = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDetailPenjualan();
+  }
+
+  Future<void> fetchDetailPenjualan() async {
+    try {
+      final response = await supabase
+          .from('penjualan')
+          .select('''penjualanid, created_at, totalharga,
+            pelanggan(namapelanggan, alamat),
+            detailpenjualan(jumlahproduk, subtotal,
+              produk(namaproduk, harga)
+            )''')
+          .eq('penjualanid', widget.penjualanId)
+          .single();
+
+      setState(() {
+        transaksi = response;
+        detailPenjualan = List<Map<String, dynamic>>.from(response['detailpenjualan'] ?? []);
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching detail: $e');
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> generateAndDownloadReceipt() async {
+    final pdf = pw.Document();
+    final dateFormatter = DateTime.now();
+
+    final imageBytes = await rootBundle.load('assets/logo.png');
+    final image = pw.MemoryImage(imageBytes.buffer.asUint8List());
+
+    pdf.addPage(pw.Page(
+      build: (pw.Context context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Image(image, width: 100, height: 100 ),
+            pw.Text('Sales Receipt', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Date: ${dateFormatter.toString()}', style: pw.TextStyle(fontSize: 12)),
+            pw.Text('Customer: ${transaksi?['pelanggan']?['namapelanggan'] ?? 'Tidak diketahui'}', style: pw.TextStyle(fontSize: 12)),
+            pw.Text('Address: ${transaksi?['pelanggan']?['alamat'] ?? 'Tidak ada alamat'}', style: pw.TextStyle(fontSize: 12)),
+            pw.SizedBox(height: 12),
+            pw.Text('Product purchased:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.ListView.builder(
+              itemCount: detailPenjualan.length,
+              itemBuilder: (pw.Context context, int index) {
+                final item = detailPenjualan[index];
+                final produk = item['produk'] ?? {};
+                int jumlah = (item['jumlahproduk'] ?? 0) as int;
+                int harga = (produk['harga'] ?? 0) as int;
+                int subtotal = jumlah * harga;
+
+                return pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('${produk['namaproduk'] ?? 'Tidak ada nama'}', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('$jumlah x Rp$harga = Rp$subtotal', style: pw.TextStyle(fontSize: 12)),
+                  ],
+                );
+              },
+            ),
+            pw.SizedBox(height: 12),
+            pw.Text('Payment: Rp${transaksi?['totalharga'] ?? 0}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          ],
+        );
+      },
+    ));
+
+    if (kIsWeb) {
+      // Operasi file di Web menggunakan dart:html untuk download PDF.
+      final bytes = await pdf.save();
+      final buffer = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(buffer);
+      final anchor = html.AnchorElement(href: url)
+        ..target = 'blank'
+        ..download = 'struk_penjualan_${widget.penjualanId}.pdf';
+      anchor.click();
+      html.Url.revokeObjectUrl(url);
+    } else {
+      if (await Permission.storage.request().isGranted) {
+        final output = await getExternalStorageDirectory();
+        final file = File('${output!.path}/struk_penjualan_${widget.penjualanId}.pdf');
+        await file.writeAsBytes(await pdf.save());
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Struk berhasil diunduh!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Permission denied!')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Detail Penjualan', style: GoogleFonts.poppins()),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: transaksi == null
+            ? Center(child: Text('Data tidak ditemukan'))
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pelanggan: ${transaksi?['pelanggan']?['namapelanggan'] ?? 'Tidak diketahui'}',
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Alamat: ${transaksi?['pelanggan']?['alamat'] ?? 'Tidak ada alamat'}',
+                    style: GoogleFonts.poppins(fontSize: 16),
+                  ),
+                  Text(
+                    'Tanggal: ${transaksi?['created_at'] ?? 'Tidak diketahui'}',
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
+                  Divider(),
+                  Text(
+                    'Produk yang Dibeli:',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: detailPenjualan.length,
+                      itemBuilder: (context, index) {
+                        final item = detailPenjualan[index];
+                        final produk = item['produk'] ?? {};
+                        int jumlah = (item['jumlahproduk'] ?? 0) as int;
+                        int harga = (produk['harga'] ?? 0) as int;
+                        int subtotal = jumlah * harga;
+
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 4),
+                          child: ListTile(
+                            title: Text(produk['namaproduk'] ?? 'Tidak ada nama', style: GoogleFonts.poppins(fontSize: 14)),
+                            subtitle: Text(
+                              '$jumlah x Rp$harga = Rp$subtotal',
+                              style: GoogleFonts.poppins(fontSize: 12),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Divider(),
+                  Text(
+                    'Total Pembayaran: Rp${transaksi?['totalharga'] ?? 0}',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: generateAndDownloadReceipt,
+                    child: Text('Unduh Struk', style: GoogleFonts.poppins()),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+struk 2 yang tadi detail
+import 'dart:io';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:html' as html;  // Menggunakan dart:html untuk Web-specific operations.
+
+class DetailPenjualan extends StatefulWidget {
+  final int penjualanId;
+  final Map<String, dynamic> transaksi;
+
+  const DetailPenjualan({super.key, required this.penjualanId, required this.transaksi});
+
+  @override
+  _DetailPenjualanState createState() => _DetailPenjualanState();
+}
+
+class _DetailPenjualanState extends State<DetailPenjualan> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  Map<String, dynamic>? transaksi;
+  List<Map<String, dynamic>> detailPenjualan = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDetailPenjualan();
+  }
+
+  Future<void> fetchDetailPenjualan() async {
+    try {
+      final response = await supabase
+          .from('penjualan')
+          .select('''penjualanid, created_at, totalharga,
+            pelanggan(namapelanggan, alamat),
+            detailpenjualan(jumlahproduk, subtotal,
+              produk(namaproduk, harga)
+            )''')
+          .eq('penjualanid', widget.penjualanId)
+          .single();
+
+      setState(() {
+        transaksi = response;
+        detailPenjualan = List<Map<String, dynamic>>.from(response['detailpenjualan'] ?? []);
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching detail: $e');
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> generateAndDownloadReceipt() async {
+    final pdf = pw.Document();
+    final dateFormatter = DateTime.now();
+
+    final imageBytes = await rootBundle.load('assets/logo.png');
+    final image = pw.MemoryImage(imageBytes.buffer.asUint8List());
+
+    pdf.addPage(pw.Page(
+      build: (pw.Context context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Image(image, width: 100, height: 100 ),
+            pw.Text('Sales Receipt', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Date: ${dateFormatter.toString()}', style: pw.TextStyle(fontSize: 12)),
+            pw.Text('Customer: ${transaksi?['pelanggan']?['namapelanggan'] ?? 'Tidak diketahui'}', style: pw.TextStyle(fontSize: 12)),
+            pw.Text('Address: ${transaksi?['pelanggan']?['alamat'] ?? 'Tidak ada alamat'}', style: pw.TextStyle(fontSize: 12)),
+            pw.SizedBox(height: 12),
+            pw.Text('Product purchased:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.ListView.builder(
+              itemCount: detailPenjualan.length,
+              itemBuilder: (pw.Context context, int index) {
+                final item = detailPenjualan[index];
+                final produk = item['produk'] ?? {};
+                int jumlah = (item['jumlahproduk'] ?? 0) as int;
+                int harga = (produk['harga'] ?? 0) as int;
+                int subtotal = jumlah * harga;
+
+                return pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('${produk['namaproduk'] ?? 'Tidak ada nama'}', style: pw.TextStyle(fontSize: 12)),
+                    pw.Text('$jumlah x Rp$harga = Rp$subtotal', style: pw.TextStyle(fontSize: 12)),
+                  ],
+                );
+              },
+            ),
+            pw.SizedBox(height: 12),
+            pw.Text('Payment: Rp${transaksi?['totalharga'] ?? 0}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          ],
+        );
+      },
+    ));
+
+    if (kIsWeb) {
+      // Operasi file di Web menggunakan dart:html untuk download PDF.
+      final bytes = await pdf.save();
+      final buffer = html.Blob([bytes]);
+      final url = html.Url.createObjectUrlFromBlob(buffer);
+      final anchor = html.AnchorElement(href: url)
+        ..target = 'blank'
+        ..download = 'struk_penjualan_${widget.penjualanId}.pdf';
+      anchor.click();
+      html.Url.revokeObjectUrl(url);
+    } else {
+      if (await Permission.storage.request().isGranted) {
+        final output = await getExternalStorageDirectory();
+        final file = File('${output!.path}/struk_penjualan_${widget.penjualanId}.pdf');
+        await file.writeAsBytes(await pdf.save());
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Struk berhasil diunduh!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Permission denied!')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Detail Penjualan', style: GoogleFonts.poppins()),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: transaksi == null
+            ? Center(child: Text('Data tidak ditemukan'))
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pelanggan: ${transaksi?['pelanggan']?['namapelanggan'] ?? 'Tidak diketahui'}',
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Alamat: ${transaksi?['pelanggan']?['alamat'] ?? 'Tidak ada alamat'}',
+                    style: GoogleFonts.poppins(fontSize: 16),
+                  ),
+                  Text(
+                    'Tanggal: ${transaksi?['created_at'] ?? 'Tidak diketahui'}',
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
+                  Divider(),
+                  Text(
+                    'Produk yang Dibeli:',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: detailPenjualan.length,
+                      itemBuilder: (context, index) {
+                        final item = detailPenjualan[index];
+                        final produk = item['produk'] ?? {};
+                        int jumlah = (item['jumlahproduk'] ?? 0) as int;
+                        int harga = (produk['harga'] ?? 0) as int;
+                        int subtotal = jumlah * harga;
+
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 4),
+                          child: ListTile(
+                            title: Text(produk['namaproduk'] ?? 'Tidak ada nama', style: GoogleFonts.poppins(fontSize: 14)),
+                            subtitle: Text(
+                              '$jumlah x Rp$harga = Rp$subtotal',
+                              style: GoogleFonts.poppins(fontSize: 12),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Divider(),
+                  Text(
+                    'Total Pembayaran: Rp${transaksi?['totalharga'] ?? 0}',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: generateAndDownloadReceipt,
+                    child: Text('Unduh Struk', style: GoogleFonts.poppins()),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+cetak pdf
+import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class PdfGenerator extends StatefulWidget {
+  final Map cetak;
+  final String penjualanId;
+  const PdfGenerator({Key? key, required this.cetak, required this.penjualanId}) : super(key: key);
+
+  @override
+  _PdfGeneratorState createState() => _PdfGeneratorState();
+}
+
+class _PdfGeneratorState extends State<PdfGenerator> {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Cetak Struck"),
+      content: Text("Apakah Anda ingin mencetak struck untuk penjualan ini?"),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text("Batal"),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            generateAndPrintPDF(widget.penjualanId);
+          },
+          child: Text("Cetak"),
+        ),
+      ],
+    );
+  }
+
+  Future<void> generateAndPrintPDF(String penjualanId) async {
+    final pdf = pw.Document();
+   
+    var responseSales = await Supabase.instance.client
+        .from('penjualan')
+        .select('*, pelanggan(*), user(*)')
+        .eq('PenjualanID', penjualanId)
+        .single();
+   
+    var responseSalesDetail = await Supabase.instance.client
+        .from('detailpenjualan')
+        .select('*, produk(*)')
+        .eq('PenjualanID', int.parse(penjualanId));
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text("Struck Penjualan", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                "Pelanggan: ${responseSales['pelanggan']['NamaPelanggan']}", style: pw.TextStyle(fontSize: 18)),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                "Petugas Kasir: ${responseSales['user']['Username']}", style: pw.TextStyle(fontSize: 18)),
+              pw.SizedBox(height: 10),
+              pw.Text("Tanggal: ${responseSales['TanggalPenjualan']}", style: pw.TextStyle(fontSize: 16)),
+              pw.SizedBox(height: 10),
+              pw.Table.fromTextArray(
+                headers: ["Produk", "Jumlah", "Subtotal"],
+                data: responseSalesDetail.map((detail) => [
+                  detail['produk']['NamaProduk'],
+                  detail['JumlahProduk'].toString(),
+                  detail['Subtotal'].toString()
+                ]).toList(),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Text("Total Harga: ${responseSales['TotalHarga']}", style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+  }
+}
+
+
+
