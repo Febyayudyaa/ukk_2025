@@ -1,4 +1,6 @@
-
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:ukk_2025/user/index.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,6 +19,8 @@ class _UpdateUserState extends State<UpdateUser> {
   final _password = TextEditingController();
   final _role = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  String? _oldPasswordHash;
+  String? _oldSalt;
 
   @override
   void initState() {
@@ -24,47 +28,72 @@ class _UpdateUserState extends State<UpdateUser> {
     _loadUser();
   }
 
+  /// Fungsi untuk menghasilkan salt
+  String generateSalt() {
+    final random = Random.secure();
+    final values = List<int>.generate(16, (i) => random.nextInt(256));
+    return base64UrlEncode(values);
+  }
+
+  /// Fungsi untuk mengenkripsi password dengan salt
+  String hashPassword(String password, String salt) {
+    final bytes = utf8.encode(password + salt);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
   Future<void> _loadUser() async {
-  try {
-    final data = await Supabase.instance.client
-        .from('user')
-        .select()
-        .eq('id', widget.id)
-        .maybeSingle();
+    try {
+      final data = await Supabase.instance.client
+          .from('user')
+          .select()
+          .eq('id', widget.id)
+          .maybeSingle();
 
-    if (data == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User tidak ditemukan')));
-      Navigator.pop(context);
-      return;
+      if (data == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User tidak ditemukan')));
+        Navigator.pop(context);
+        return;
+      }
+
+      setState(() {
+        _username.text = data['username'] ?? '';
+        _role.text = data['role'] ?? '';
+        _oldPasswordHash = data['password'];
+        _oldSalt = data['salt'];
+      });
+    } catch (e) {
+      print('Error loading user: $e');
     }
-
-    setState(() {
-      _username.text = data['username'] ?? '';
-      _password.text = data['password'] ?? '';
-      _role.text = data['role'] ?? '';
-    });
-  } catch (e) {
-    print('Error loading user: $e');
   }
-}
 
-Future<void> updateUser() async {
-  if (!_formKey.currentState!.validate()) return;
+  Future<void> updateUser() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  try {
-    await Supabase.instance.client.from('user').update({
-      'username': _username.text,
-      'password': _password.text,
-      'role': _role.text,
-    }).eq('id', widget.id);
+    try {
+      String newSalt = generateSalt();
+      String hashedPassword = _password.text.isNotEmpty
+          ? hashPassword(_password.text, newSalt)
+          : _oldPasswordHash!;
+      String saltToSave = _password.text.isNotEmpty ? newSalt : _oldSalt!;
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data berhasil diperbarui')));
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const IndexUser()));
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+      await Supabase.instance.client.from('user').update({
+        'username': _username.text,
+        'password': hashedPassword,
+        'salt': saltToSave,
+        'role': _role.text,
+      }).eq('id', widget.id);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data berhasil diperbarui')));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => const IndexUser()));
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -112,10 +141,7 @@ Future<void> updateUser() async {
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password tidak boleh kosong';
-                  }
-                  return null;
+                  return null; // Password boleh kosong jika tidak ingin diubah
                 },
               ),
               const SizedBox(height: 16),

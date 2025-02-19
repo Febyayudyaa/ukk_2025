@@ -1,4 +1,6 @@
-
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk_2025/user/index.dart';
@@ -15,9 +17,23 @@ class _InsertUserState extends State<InsertUser> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedRole;
-  bool _isObscure = true; 
+  bool _isObscure = true;
 
   final SupabaseClient supabase = Supabase.instance.client;
+
+  // Fungsi untuk membuat salt acak
+  String generateSalt() {
+    final random = Random.secure();
+    final values = List<int>.generate(16, (i) => random.nextInt(256));
+    return base64Url.encode(values);
+  }
+
+  // Fungsi untuk hash password dengan salt
+  String hashPasswordWithSalt(String password, String salt) {
+    final bytes = utf8.encode(password + salt);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
 
   Future<void> _saveData() async {
     if (!_formKey.currentState!.validate()) return;
@@ -26,17 +42,22 @@ class _InsertUserState extends State<InsertUser> {
     final password = _passwordController.text;
     final role = _selectedRole;
 
+    // Generate salt unik dan hash password
+    final salt = generateSalt();
+    final hashedPassword = hashPasswordWithSalt(password, salt);
+
     try {
       await supabase.from('user').insert({
         'username': username,
-        'password': password,
+        'password': hashedPassword,// Simpan salt agar bisa digunakan saat login
         'role': role,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Data berhasil disimpan!')),
       );
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const IndexUser()));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => const IndexUser()));
     } on PostgrestException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Terjadi kesalahan: ${e.message}')),
@@ -52,7 +73,8 @@ class _InsertUserState extends State<InsertUser> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Data User', style: TextStyle(color: Colors.white)),
+        title: const Text('Tambah Data User',
+            style: TextStyle(color: Colors.white)),
         elevation: 0,
         backgroundColor: Colors.brown[800],
         leading: IconButton(
@@ -78,13 +100,14 @@ class _InsertUserState extends State<InsertUser> {
                   labelText: 'Username',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Username tidak boleh kosong' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Username tidak boleh kosong'
+                    : null,
               ),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _passwordController,
-                obscureText: _isObscure, 
+                obscureText: _isObscure,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   border: const OutlineInputBorder(),
@@ -99,8 +122,9 @@ class _InsertUserState extends State<InsertUser> {
                     },
                   ),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Password tidak boleh kosong' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Password tidak boleh kosong'
+                    : null,
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
@@ -110,15 +134,17 @@ class _InsertUserState extends State<InsertUser> {
                   border: OutlineInputBorder(),
                 ),
                 items: ['Admin', 'Petugas', 'Pembeli']
-                    .map((role) => DropdownMenuItem(value: role, child: Text(role)))
+                    .map((role) =>
+                        DropdownMenuItem(value: role, child: Text(role)))
                     .toList(),
                 onChanged: (value) => setState(() => _selectedRole = value),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Role tidak boleh kosong' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Role tidak boleh kosong'
+                    : null,
               ),
               const SizedBox(height: 20),
               SizedBox(
-                width: double.infinity, 
+                width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _saveData,
                   style: ElevatedButton.styleFrom(

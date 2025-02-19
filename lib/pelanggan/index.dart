@@ -45,21 +45,49 @@ class _IndexPelangganState extends State<IndexPelanggan> {
 
   Future<void> deletePelanggan(int PelangganID) async {
     try {
-      print('Menghapus pelanggan dengan ID: $PelangganID');
+      final relatedSales = await Supabase.instance.client
+          .from('detailpenjualan')
+          .select()
+          .eq('PelangganID', PelangganID);
+
+      if (relatedSales.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Pelanggan tidak bisa dihapus karena sudah digunakan dalam transaksi!',
+            ),
+            backgroundColor: Colors.brown,
+          ),
+        );
+        return;
+      }
 
       await Supabase.instance.client
           .from('pelanggan')
           .delete()
           .eq('PelangganID', PelangganID);
 
-      print('Pelanggan berhasil dihapus.');
-
       setState(() {
         pelanggan.removeWhere((item) => item['PelangganID'] == PelangganID);
         filteredPelanggan = List.from(pelanggan);
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pelanggan berhasil dihapus!'),
+          backgroundColor: Colors.brown,
+        ),
+      );
+
+      print('Pelanggan berhasil dihapus.');
     } catch (e) {
       print('Error menghapus pelanggan: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menghapus pelanggan: $e'),
+          backgroundColor: Colors.brown,
+        ),
+      );
     }
   }
 
@@ -188,7 +216,7 @@ class _IndexPelangganState extends State<IndexPelanggan> {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete,
-                                    color: Color(0xFF8D6E63)),
+                                    color: Colors.brown),
                                 onPressed: () {
                                   showDialog(
                                     context: context,
@@ -196,7 +224,7 @@ class _IndexPelangganState extends State<IndexPelanggan> {
                                       return AlertDialog(
                                         title: const Text('Hapus Pelanggan'),
                                         content: const Text(
-                                            'Apakah Anda yakin ingin menghapus pelanggan ini?'),
+                                            'Apakah Anda yakin ingin menghapus Pelanggan ini?'),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
@@ -212,8 +240,7 @@ class _IndexPelangganState extends State<IndexPelanggan> {
                                             child: const Text(
                                               'Hapus',
                                               style: TextStyle(
-                                                backgroundColor:
-                                                    Color(0xFF4E342E),
+                                                color: Colors.brown,
                                               ),
                                             ),
                                           ),

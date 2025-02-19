@@ -1,10 +1,11 @@
-
 import 'package:flutter/material.dart';
-import 'package:ukk_2025/detailpenjualan/index.dart';
+//import 'package:ukk_2025/detailpenjualan/index';
 import 'package:ukk_2025/pelanggan/index.dart';
 import 'package:ukk_2025/penjualan/index.dart';
+//import 'package:ukk_2025/penjualan/index';
 import 'package:ukk_2025/produk/index.dart';
 import 'package:ukk_2025/user/index.dart';
+import 'package:ukk_2025/detailpenjualan/index.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -109,26 +110,26 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => IndexPenjualan()),
+                  MaterialPageRoute(
+                      builder: (context) => IndexPenjualanAdmin()),
                 );
               },
             ),
-           ListTile(
-  leading: const Icon(Icons.receipt_long),
-  title: const Text('Detail Penjualan'),
-  textColor: Colors.black,
-  onTap: () {
-    int penjualanID = 123; // Ganti ini dengan nilai penjualanID yang sesuai
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DetailPenjualanIndex(penjualanI: penjualanID),
-      ),
-    );
-  },
-),
-
-
+            ListTile(
+              leading: const Icon(Icons.receipt_long),
+              title: const Text('Detail Penjualan'),
+              textColor: Colors.black,
+              onTap: () {
+                int penjualanID = 123; // ID yang ingin dikirim
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        IndexDetailAdmin(penjualanID: penjualanID),
+                  ),
+                );
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.person_2_outlined),
               title: const Text('Data User'),

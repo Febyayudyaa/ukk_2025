@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ukk_2025/homepage.dart';
-import 'package:ukk_2025/penjualan/insert.dart';
+import 'package:ukk_2025/produk/harga.dart';
+import 'package:intl/intl.dart';
 
-class IndexPenjualan extends StatefulWidget {
-  const IndexPenjualan({super.key});
+class IndexPenjualanAdmin extends StatefulWidget {
+  const IndexPenjualanAdmin({super.key});
 
   @override
-  State<IndexPenjualan> createState() => _IndexPenjualanPetugasState();
+  State<IndexPenjualanAdmin> createState() => _IndexPenjualanAdminState();
 }
 
-class _IndexPenjualanPetugasState extends State<IndexPenjualan> {
+class _IndexPenjualanAdminState extends State<IndexPenjualanAdmin> {
   List<Map<String, dynamic>> penjualan = [];
   List<int> selectedPenjualan = [];
 
@@ -33,61 +33,53 @@ class _IndexPenjualanPetugasState extends State<IndexPenjualan> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.brown[800],
-        title: const Text('Data Penjualan', style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (context) => HomePage()));
-          },
-        ),
-      ),
       body: penjualan.isEmpty
-          ? const Center(child: Text('Penjualan', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),))
-          : Container(
-              padding: EdgeInsets.all(16),
-              child: ListView.builder(
-                itemCount: penjualan.length,
-                itemBuilder: (context, index) {
-                  final pjl = penjualan[index];
-                  return Card(
+          ? const Center(child: Text('Data penjualan belum ditambahkan'))
+          : ListView.builder(
+              itemCount: penjualan.length,
+              itemBuilder: (context, index) {
+                final pjl = penjualan[index];
+                return Card(
                     margin: EdgeInsets.symmetric(vertical: 8),
                     elevation: 4,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Nama Pelanggan: ${pjl['pelanggan']['NamaPelanggan'] ?? 'Tidak tersedia'}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18),
-                        ),
-                        Text(
-                          'Tanggal: ${pjl['TanggalPenjualan'] ?? 'Tidak tersedia'}',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          'Total Harga: ${pjl['TotalHarga'] ?? 'Tidak tersedia'}',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-      // floatingActionButton: FloatingActionButton(onPressed: (){
-      //   Navigator.push(context, MaterialPageRoute(builder: (context) => InsertPenjualan(produk: pjl)));
-      // },
-      // child: Icon(Icons.add),
-      // ),
+                    child: SizedBox(
+                        height: 180,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Nama Pelanggan: ${pjl['pelanggan']['NamaPelanggan'] ?? 'Tidak tersedia'}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 20),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Tanggal: ${pjl['TanggalPenjualan'] ?? 'Tidak tersedia'}',
+                                style: TextStyle(fontSize: 18),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Total Harga: Rp${pjl['TotalHarga'] != null ? NumberFormat("#,###", "id_ID").format(int.tryParse(pjl['TotalHarga'].toString()) ?? 0) : 'tidak tersedia'}',
+                                style: TextStyle(fontSize: 18),
+                              )
+                            ],
+                          ),
+                        )));
+              }),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => HargaProdukAdmin()));
+        },
+        child: Icon(Icons.add),
+      ),
     );
   }
 }

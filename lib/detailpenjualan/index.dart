@@ -1,110 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ukk_2025/homepage.dart';
+import 'package:intl/intl.dart';
 
-class DetailPenjualanIndex extends StatefulWidget {
-  final int penjualanI;
-  const DetailPenjualanIndex({super.key, required this.penjualanI});
+class IndexDetailAdmin extends StatefulWidget {
+  final int penjualanID; // Tambahkan parameter
+
+  const IndexDetailAdmin({Key? key, required this.penjualanID})
+      : super(key: key);
 
   @override
-  State<DetailPenjualanIndex> createState() => _DetailPenjualanIndexState();
+  State<IndexDetailAdmin> createState() => _IndexDetailAdminState();
 }
 
-class _DetailPenjualanIndexState extends State<DetailPenjualanIndex> {
-  List<Map<String, dynamic>> detail = [];
+class _IndexDetailAdminState extends State<IndexDetailAdmin> {
+  List<Map<String, dynamic>> detailList = [];
   bool isLoading = true;
-  Map<int, bool> selectedProduk = {};
-  double totalHarga = 0.0;
 
   @override
   void initState() {
     super.initState();
-    fetchdetail();
+    fetchDetail();
   }
 
-  Future<void> fetchdetail() async {
-    setState(() => isLoading = true);
+  Future<void> fetchDetail() async {
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       final response = await Supabase.instance.client
           .from('detailpenjualan')
-          .select('*, penjualan(*, pelanggan(*)), produk(*)');
+          .select('*, penjualan(*, pelanggan(*)), produk(*)')
+          .eq('PenjualanID',
+              widget.penjualanID); // Filter berdasarkan penjualanID
 
       setState(() {
-        detail = List<Map<String, dynamic>>.from(response);
+        detailList = List<Map<String, dynamic>>.from(response);
         isLoading = false;
       });
     } catch (e) {
-      debugPrint("Error: $e");
-      setState(() => isLoading = false);
-    }
-  }
-
-  void toggleProdukSelection(int ProdukID, double harga) {
-    setState(() {
-      selectedProduk[ProdukID] = !(selectedProduk[ProdukID] ?? false);
-      totalHarga =
-          selectedProduk[ProdukID]! ? totalHarga + harga : totalHarga - harga;
-    });
-  }
-
-  Future<void> insertDetailPenjualan() async {
-    List<Map<String, dynamic>> produkDipilih = detail.where((dtl) {
-      int? produkID = dtl['produk']?['ProdukID'] as int?;
-      return produkID != null && selectedProduk[produkID] == true;
-    }).map((dtl) {
-      return {
-        'PelangganID': dtl['pelanggan']?['PelangganID'],
-        'TotalHarga': (dtl['Subtotal'] as num?)?.toDouble() ?? 0.0,
-      };
-    }).toList();
-
-    if (produkDipilih.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Pilih minimal satu produk!")),
-      );
-      return;
-    }
-
-    try {
-      await Supabase.instance.client.from('penjualan').insert(produkDipilih);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Produk berhasil dipesan!")),
-      );
+      debugPrint('Error saat mengambil data: $e');
       setState(() {
-        selectedProduk.clear();
-        totalHarga = 0.0;
+        isLoading = false;
       });
-    } catch (e) {
-      debugPrint("Error saat insert: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal memesan produk: $e")),
-      );
     }
-  }
-
-  void showOrderDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Pilih Opsi"),
-        content: Text("Ingin pesan produk atau mencetak PDF?"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              insertDetailPenjualan();
-            },
-            child: Text("Pesan Produk"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text("Cetak PDF"),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -114,62 +53,63 @@ class _DetailPenjualanIndexState extends State<DetailPenjualanIndex> {
         backgroundColor: Colors.brown[800],
         title: const Text('Detail Penjualan',
             style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (context) => HomePage()));
-          },
-        ),
       ),
-      body: detail.isEmpty
-          ? Center(
-              child: Text('Detail Penjualan',
-                  style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold)))
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(8),
-                    itemCount: detail.length,
-                    itemBuilder: (context, index) {
-                      final dtl = detail[index];
-                      int produkID = dtl['produk']?['ProdukID'] ?? 0;
-                      double harga =
-                          (dtl['Subtotal'] as num?)?.toDouble() ?? 0.0;
-                      return Card(
-                        key: ValueKey(produkID),
-                        elevation: 4,
-                        margin: EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          title: Text(
-                            'Nama Produk: ${dtl['produk']?['NamaProduk'] ?? '-'}',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 18),
-                          ),
-                          subtitle: Column(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : detailList.isEmpty
+              ? const Center(child: Text('Tidak ada detail penjualan'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: detailList.length,
+                  itemBuilder: (context, index) {
+                    final dtl = detailList[index];
+                    final penjualan = dtl['penjualan'] ?? {};
+                    final pelanggan = penjualan['pelanggan'] ?? {};
+                    final produk = dtl['produk'] ?? {};
+
+                    return Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: SizedBox(
+                        height: 180,
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Nama Pelanggan: ${dtl['penjualan']?['pelanggan']?['NamaPelanggan'] ?? '-'}',
+                                'Nama Pelanggan: ${pelanggan['NamaPelanggan'] ?? 'Tidak tersedia'}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
                               ),
+                              const SizedBox(height: 8),
                               Text(
-                                  'Jumlah Produk: ${dtl['JumlahProduk'] ?? 'tidak tersedia'}'),
+                                'Nama Produk: ${produk['NamaProduk'] ?? 'Tidak tersedia'}',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
                               Text(
-                                'Total Harga: Rp${harga.toStringAsFixed(2)}',
+                                'Jumlah Produk: ${dtl['JumlahProduk'] ?? 'Tidak tersedia'}',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'SubTotal: Rp${dtl['Subtotal'] != null ? NumberFormat("#,###", "id_ID").format(int.tryParse(dtl['Subtotal'].toString()) ?? 0) : 'tidak tersedia'}',
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.brown),
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
     );
   }
 }
